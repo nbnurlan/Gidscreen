@@ -1,0 +1,110 @@
+<resources>
+    <string name="app_name">Screen Lasso AI</string>
+    <string name="app_subtitle">Powered by Gemini 2.5 Flash</string>
+    <string name="gemini_model_name">gemini-2.5-flash</string>
+
+    <!-- Tabs -->
+    <string name="tab_control_center">Control Center</string>
+    <string name="tab_interactive_sandbox">Interactive Sandbox</string>
+
+    <!-- Master Service Card -->
+    <string name="service_title">Overlay Lens Service</string>
+    <string name="service_status_running">Running over all apps</string>
+    <string name="service_status_ready">Ready to activate</string>
+    <string name="service_description">When active, a floating action button will appear over any app. Tap it to draw a lasso around any screen region for instant Gemini 2.5 Flash analysis.</string>
+    <string name="btn_start_service">Start Floating Lens</string>
+    <string name="btn_stop_service">Stop Service</string>
+
+    <!-- Language Selector -->
+    <string name="language_settings_title">Interface Language</string>
+    <string name="language_settings_desc">Choose the display language for the app and floating overlay</string>
+    <string name="language_english">English</string>
+    <string name="language_uzbek">O\'zbekcha</string>
+    <string name="language_russian">Русский</string>
+    <string name="toast_language_changed">Language changed to %1$s</string>
+
+    <!-- Permissions -->
+    <string name="section_permissions_title">System Permissions &amp; Configuration</string>
+    <string name="perm_overlay_title">Display Over Other Apps (SYSTEM_ALERT_WINDOW)</string>
+    <string name="perm_overlay_desc">Displays floating button and resizable AI chat overlay</string>
+    <string name="perm_capture_title">Screen Capture (MediaProjection API)</string>
+    <string name="perm_capture_desc">Captures exact pixels inside your drawn lasso path</string>
+    <string name="perm_notification_title">Foreground Notifications</string>
+    <string name="perm_notification_desc">Keeps foreground service active and accessible</string>
+    <string name="btn_grant">Grant</string>
+    <string name="status_active">Active</string>
+
+    <!-- Gemini API -->
+    <string name="api_card_title">Google Gemini API</string>
+    <string name="api_card_ready">Connected • gemini-2.5-flash ready</string>
+    <string name="api_card_pending">AI Studio Secrets • Live Key Configured via .env</string>
+
+    <!-- Quick Guide -->
+    <string name="guide_title">How to Use Screen Lasso AI</string>
+    <string name="guide_step1_title">Grant Permissions</string>
+    <string name="guide_step1_desc">Enable Overlay and Screen Capture permissions.</string>
+    <string name="guide_step2_title">Tap Floating Button</string>
+    <string name="guide_step2_desc">A glowing circular bubble hovers over any app on your device.</string>
+    <string name="guide_step3_title">Draw Selection</string>
+    <string name="guide_step3_desc">Lasso around any code, question, math formula, or graphic.</string>
+    <string name="guide_step4_title">Instant AI Insights</string>
+    <string name="guide_step4_desc">Gemini 2.5 Flash explains the content in a resizable chat window.</string>
+
+    <!-- Sandbox -->
+    <string name="sandbox_title">Interactive In-App Selection Sandbox</string>
+    <string name="sandbox_desc">Test drawing freehand lasso, rectangular, and circular selections directly. The AI will immediately analyze the selected content.</string>
+    <string name="sandbox_sample1_title">Python Bug &amp; Algorithm</string>
+    <string name="sandbox_sample2_title">Quantum Physics &amp; Math Problem</string>
+    <string name="btn_select_area">Select Area</string>
+    <string name="btn_launch_selector">Launch Screen Lasso Selector</string>
+
+    <!-- Selection Overlay -->
+    <string name="bubble_content_desc">Screen Selection</string>
+    <string name="bubble_sparkle_desc">AI Sparkle</string>
+    <string name="mode_lasso">Lasso</string>
+    <string name="mode_rect">Rect</string>
+    <string name="mode_circle">Circle</string>
+    <string name="btn_reset_selection">Reset Selection</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="selection_instruction_badge">Draw around screen content • Auto AI analysis on release</string>
+
+    <!-- Chat Overlay Window -->
+    <string name="chat_title">Gemini Screen Lens</string>
+    <string name="chat_minimized_analyzing">Analyzing...</string>
+    <string name="chat_minimized_title">Gemini Insights</string>
+    <string name="btn_expand">Expand</string>
+    <string name="btn_close">Close</string>
+    <string name="btn_minimize">Minimize</string>
+    <string name="btn_new_selection">New Selection</string>
+    <string name="btn_drag_window">Drag Window</string>
+    <string name="btn_language">Language</string>
+    <string name="captured_screen_area">Captured Screen Area</string>
+    <string name="analyzing_heading">Analyzing with gemini-2.5-flash...</string>
+    <string name="analyzing_subheading">Extracting text, code, visual elements &amp; reasoning</string>
+    <string name="error_heading">Analysis Error</string>
+    <string name="btn_retry_analysis">Retry Analysis</string>
+    <string name="sender_you">You</string>
+    <string name="sender_gemini">Gemini 2.5 Flash</string>
+    <string name="btn_copy_text">Copy Text</string>
+    <string name="toast_copied">Copied to clipboard</string>
+    <string name="prompt_explain_simply">Explain simply</string>
+    <string name="prompt_extract_text">Extract text</string>
+    <string name="prompt_solve_code">Solve/Explain code</string>
+    <string name="input_placeholder_follow_up">Ask follow-up question...</string>
+    <string name="btn_send">Send</string>
+    <string name="footer_status_active">Lasso &amp; Lens • MediaProjection Active</string>
+
+    <!-- Notifications & Toasts -->
+    <string name="notification_channel_name">Screen Lasso Service</string>
+    <string name="notification_channel_desc">Running overlay floating button and screen capture for AI analysis</string>
+    <string name="notification_title">Screen Lasso AI Active</string>
+    <string name="notification_text">Tap floating button on screen to analyze content</string>
+    <string name="notification_action_stop">Stop</string>
+    <string name="toast_overlay_required">Overlay permission is required for the floating button</string>
+    <string name="toast_service_started">Screen Lasso AI Service Started!</string>
+    <string name="toast_capture_declined">Screen capture permission was declined</string>
+    <string name="toast_service_stopped">Service Stopped</string>
+    <string name="error_no_projection">Screen capture permission not active. Please tap \'Grant &amp; Start Capture\' in the Screen Lasso app.</string>
+    <string name="error_analyze_failed">Failed to analyze selection.</string>
+    <string name="error_general_gemini">Failed to analyze screen selection with Gemini AI.</string>
+</resources>

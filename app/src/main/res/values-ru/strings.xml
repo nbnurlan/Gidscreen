@@ -1,0 +1,110 @@
+<resources>
+    <string name="app_name">Screen Lasso AI</string>
+    <string name="app_subtitle">На базе Gemini 2.5 Flash</string>
+    <string name="gemini_model_name">gemini-2.5-flash</string>
+
+    <!-- Tabs -->
+    <string name="tab_control_center">Центр управления</string>
+    <string name="tab_interactive_sandbox">Интерактивная песочница</string>
+
+    <!-- Master Service Card -->
+    <string name="service_title">Служба экранной лупы</string>
+    <string name="service_status_running">Работает поверх всех приложений</string>
+    <string name="service_status_ready">Готова к запуску</string>
+    <string name="service_description">При активации поверх любого приложения появится плавающая кнопка. Выделите область экрана лассо или фигурой для мгновенного анализа с помощью Gemini 2.5 Flash.</string>
+    <string name="btn_start_service">Запустить плавающую лупу</string>
+    <string name="btn_stop_service">Остановить службу</string>
+
+    <!-- Language Selector -->
+    <string name="language_settings_title">Язык интерфейса</string>
+    <string name="language_settings_desc">Выберите язык отображения приложения и плавающего оверлея</string>
+    <string name="language_english">English</string>
+    <string name="language_uzbek">O\'zbekcha</string>
+    <string name="language_russian">Русский</string>
+    <string name="toast_language_changed">Язык изменен на %1$s</string>
+
+    <!-- Permissions -->
+    <string name="section_permissions_title">Системные разрешения и настройки</string>
+    <string name="perm_overlay_title">Отображение поверх других приложений (SYSTEM_ALERT_WINDOW)</string>
+    <string name="perm_overlay_desc">Отображает плавающую кнопку и окно ИИ-чата</string>
+    <string name="perm_capture_title">Захват экрана (MediaProjection API)</string>
+    <string name="perm_capture_desc">Захватывает точные пиксели внутри выделенной области</string>
+    <string name="perm_notification_title">Уведомления</string>
+    <string name="perm_notification_desc">Обеспечивает непрерывную работу фоновой службы</string>
+    <string name="btn_grant">Предоставить</string>
+    <string name="status_active">Активно</string>
+
+    <!-- Gemini API -->
+    <string name="api_card_title">Google Gemini API</string>
+    <string name="api_card_ready">Подключено • gemini-2.5-flash готов</string>
+    <string name="api_card_pending">Секреты AI Studio • Ключ настроен через .env</string>
+
+    <!-- Quick Guide -->
+    <string name="guide_title">Как пользоваться Screen Lasso AI</string>
+    <string name="guide_step1_title">Предоставьте разрешения</string>
+    <string name="guide_step1_desc">Включите отображение поверх окон и захват экрана.</string>
+    <string name="guide_step2_title">Нажмите плавающую кнопку</string>
+    <string name="guide_step2_desc">Светящаяся круглая кнопка парит поверх любого экрана.</string>
+    <string name="guide_step3_title">Выделите область</string>
+    <string name="guide_step3_desc">Обведите лассо код, вопрос, формулу или изображение.</string>
+    <string name="guide_step4_title">Мгновенный ИИ-анализ</string>
+    <string name="guide_step4_desc">Gemini 2.5 Flash объяснит контент в удобном окне чата.</string>
+
+    <!-- Sandbox -->
+    <string name="sandbox_title">Интерактивная песочница</string>
+    <string name="sandbox_desc">Попробуйте выделить область экрана свободным лассо, прямоугольником или кругом. ИИ мгновенно проанализирует выбранный фрагмент.</string>
+    <string name="sandbox_sample1_title">Алгоритм и баг в Python</string>
+    <string name="sandbox_sample2_title">Квантовая физика и математика</string>
+    <string name="btn_select_area">Выбрать область</string>
+    <string name="btn_launch_selector">Открыть селектор Screen Lasso</string>
+
+    <!-- Selection Overlay -->
+    <string name="bubble_content_desc">Выделение экрана</string>
+    <string name="bubble_sparkle_desc">Искры ИИ</string>
+    <string name="mode_lasso">Лассо</string>
+    <string name="mode_rect">Прямоугольник</string>
+    <string name="mode_circle">Круг</string>
+    <string name="btn_reset_selection">Сбросить</string>
+    <string name="btn_cancel">Отмена</string>
+    <string name="selection_instruction_badge">Обведите контент на экране • Автоматический анализ ИИ при отпускании</string>
+
+    <!-- Chat Overlay Window -->
+    <string name="chat_title">Gemini Screen Lens</string>
+    <string name="chat_minimized_analyzing">Анализ...</string>
+    <string name="chat_minimized_title">Инсайты Gemini</string>
+    <string name="btn_expand">Развернуть</string>
+    <string name="btn_close">Закрыть</string>
+    <string name="btn_minimize">Свернуть</string>
+    <string name="btn_new_selection">Новое выделение</string>
+    <string name="btn_drag_window">Переместить окно</string>
+    <string name="btn_language">Язык</string>
+    <string name="captured_screen_area">Снимок выделенной области</string>
+    <string name="analyzing_heading">Анализ с помощью gemini-2.5-flash...</string>
+    <string name="analyzing_subheading">Извлечение текста, кода, визуальных элементов и логики</string>
+    <string name="error_heading">Ошибка анализа</string>
+    <string name="btn_retry_analysis">Повторить анализ</string>
+    <string name="sender_you">Вы</string>
+    <string name="sender_gemini">Gemini 2.5 Flash</string>
+    <string name="btn_copy_text">Копировать текст</string>
+    <string name="toast_copied">Скопировано в буфер обмена</string>
+    <string name="prompt_explain_simply">Объясни простыми словами</string>
+    <string name="prompt_extract_text">Извлеки текст</string>
+    <string name="prompt_solve_code">Разбери/исправь код</string>
+    <string name="input_placeholder_follow_up">Задайте уточняющий вопрос...</string>
+    <string name="btn_send">Отправить</string>
+    <string name="footer_status_active">Лассо и лупа • MediaProjection активен</string>
+
+    <!-- Notifications & Toasts -->
+    <string name="notification_channel_name">Служба Screen Lasso</string>
+    <string name="notification_channel_desc">Плавающая кнопка и захват экрана для ИИ-анализа</string>
+    <string name="notification_title">Screen Lasso AI активен</string>
+    <string name="notification_text">Нажмите плавающую кнопку на экране для анализа контента</string>
+    <string name="notification_action_stop">Остановить</string>
+    <string name="toast_overlay_required">Для плавающей кнопки требуется разрешение на отображение поверх окон</string>
+    <string name="toast_service_started">Служба Screen Lasso AI запущена!</string>
+    <string name="toast_capture_declined">В разрешении на захват экрана отказано</string>
+    <string name="toast_service_stopped">Служба остановлена</string>
+    <string name="error_no_projection">Разрешение на захват экрана не активно. Нажмите \'Предоставить и запустить\' в приложении Screen Lasso.</string>
+    <string name="error_analyze_failed">Не удалось проанализировать выделенный фрагмент.</string>
+    <string name="error_general_gemini">Ошибка при анализе фрагмента экрана через Gemini AI.</string>
+</resources>

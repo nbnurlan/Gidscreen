@@ -1,0 +1,110 @@
+<resources>
+    <string name="app_name">Screen Lasso AI</string>
+    <string name="app_subtitle">Gemini 2.5 Flash asosida ishlaydi</string>
+    <string name="gemini_model_name">gemini-2.5-flash</string>
+
+    <!-- Tabs -->
+    <string name="tab_control_center">Boshqaruv markazi</string>
+    <string name="tab_interactive_sandbox">Interaktiv sinov maydoni</string>
+
+    <!-- Master Service Card -->
+    <string name="service_title">Qalqib chiquvchi lupa xizmati</string>
+    <string name="service_status_running">Barcha ilovalar ustida ishlamoqda</string>
+    <string name="service_status_ready">Faollashtirishga tayyor</string>
+    <string name="service_description">Xizmat yoqilganda, har qanday ilova ustida suzuvchi tugma paydo bo\'ladi. Ekranning istalgan qismini aylana yoki to\'rtburchak shaklida belgilang va Gemini 2.5 Flash orqali tahlil qiling.</string>
+    <string name="btn_start_service">Suzuvchi lupani ishga tushirish</string>
+    <string name="btn_stop_service">Xizmatni to\'xtatish</string>
+
+    <!-- Language Selector -->
+    <string name="language_settings_title">Interfeys tili</string>
+    <string name="language_settings_desc">Ilova va suzuvchi oyna uchun interfeys tilini tanlang</string>
+    <string name="language_english">English</string>
+    <string name="language_uzbek">O\'zbekcha</string>
+    <string name="language_russian">Русский</string>
+    <string name="toast_language_changed">Til %1$s ga o\'zgartirildi</string>
+
+    <!-- Permissions -->
+    <string name="section_permissions_title">Tizim ruxsatlari va sozlamalar</string>
+    <string name="perm_overlay_title">Boshqa ilovalar ustida ko\'rsatish (SYSTEM_ALERT_WINDOW)</string>
+    <string name="perm_overlay_desc">Suzuvchi tugma va AI suhbat oynasini ko\'rsatadi</string>
+    <string name="perm_capture_title">Ekran tasvirini olish (MediaProjection API)</string>
+    <string name="perm_capture_desc">Chizilgan soha ichidagi aniq piksellarni oladi</string>
+    <string name="perm_notification_title">Xabarnomalar</string>
+    <string name="perm_notification_desc">Fon xizmatining barqaror ishlashini ta\'minlaydi</string>
+    <string name="btn_grant">Ruxsat berish</string>
+    <string name="status_active">Faol</string>
+
+    <!-- Gemini API -->
+    <string name="api_card_title">Google Gemini API</string>
+    <string name="api_card_ready">Ulangan • gemini-2.5-flash tayyor</string>
+    <string name="api_card_pending">AI Studio sirlari • .env orqali sozlangan</string>
+
+    <!-- Quick Guide -->
+    <string name="guide_title">Screen Lasso AI dan qanday foydalaniladi</string>
+    <string name="guide_step1_title">Ruxsatlar berish</string>
+    <string name="guide_step1_desc">Ekranni ko\'rsatish va tasvirga olish ruxsatlarini yoqing.</string>
+    <string name="guide_step2_title">Suzuvchi tugmani bosing</string>
+    <string name="guide_step2_desc">Har qanday ilova ustida jilvalanuvchi aylana tugma ko\'rinadi.</string>
+    <string name="guide_step3_title">Sohani belgilang</string>
+    <string name="guide_step3_desc">Kod, savol, formula yoki rasmni lasso bilan o\'rab oling.</string>
+    <string name="guide_step4_title">Tezkor AI xulosalari</string>
+    <string name="guide_step4_desc">Gemini 2.5 Flash o\'lchami o\'zgaruvchi chat oynasida javob beradi.</string>
+
+    <!-- Sandbox -->
+    <string name="sandbox_title">Interaktiv sinov maydoni</string>
+    <string name="sandbox_desc">Erkin lasso, to\'rtburchak va doira shakllarida tanlashni to\'g\'ridan-to\'g\'ri sinab ko\'ring. AI tanlangan sohani darhol tahlil qiladi.</string>
+    <string name="sandbox_sample1_title">Python xatosi va algoritmi</string>
+    <string name="sandbox_sample2_title">Kvant fizikasi va matematika masalasi</string>
+    <string name="btn_select_area">Sohani tanlash</string>
+    <string name="btn_launch_selector">Screen Lasso tanlagichini ochish</string>
+
+    <!-- Selection Overlay -->
+    <string name="bubble_content_desc">Ekran tanlovi</string>
+    <string name="bubble_sparkle_desc">AI nuri</string>
+    <string name="mode_lasso">Lasso</string>
+    <string name="mode_rect">To\'rtburchak</string>
+    <string name="mode_circle">Doira</string>
+    <string name="btn_reset_selection">Qaytarish</string>
+    <string name="btn_cancel">Bekor qilish</string>
+    <string name="selection_instruction_badge">Ekrandagi ma\'lumotni o\'rab oling • Qo\'yib yuborilganda avtomatik tahlil</string>
+
+    <!-- Chat Overlay Window -->
+    <string name="chat_title">Gemini ekran lupasi</string>
+    <string name="chat_minimized_analyzing">Tahlil qilinmoqda...</string>
+    <string name="chat_minimized_title">Gemini tushunchalari</string>
+    <string name="btn_expand">Kengaytirish</string>
+    <string name="btn_close">Yopish</string>
+    <string name="btn_minimize">Kichraytirish</string>
+    <string name="btn_new_selection">Yangi tanlov</string>
+    <string name="btn_drag_window">Oynani ko\'chirish</string>
+    <string name="btn_language">Til</string>
+    <string name="captured_screen_area">Olingan ekran sohasi</string>
+    <string name="analyzing_heading">gemini-2.5-flash bilan tahlil qilinmoqda...</string>
+    <string name="analyzing_subheading">Matn, kod, vizual elementlar va mantiq ajratib olinmoqda</string>
+    <string name="error_heading">Tahlil xatosi</string>
+    <string name="btn_retry_analysis">Qayta urinib ko\'rish</string>
+    <string name="sender_you">Siz</string>
+    <string name="sender_gemini">Gemini 2.5 Flash</string>
+    <string name="btn_copy_text">Matnni nusxalash</string>
+    <string name="toast_copied">Buferga nusxalandi</string>
+    <string name="prompt_explain_simply">Soddaroq tushuntiring</string>
+    <string name="prompt_extract_text">Matnni ajratib oling</string>
+    <string name="prompt_solve_code">Kodni tushuntiring/tuzating</string>
+    <string name="input_placeholder_follow_up">Qo\'shimcha savol bering...</string>
+    <string name="btn_send">Yuborish</string>
+    <string name="footer_status_active">Lasso va lupa • MediaProjection faol</string>
+
+    <!-- Notifications & Toasts -->
+    <string name="notification_channel_name">Screen Lasso xizmati</string>
+    <string name="notification_channel_desc">AI tahlili uchun suzuvchi tugma va ekran suratini olish</string>
+    <string name="notification_title">Screen Lasso AI faol</string>
+    <string name="notification_text">Kontentni tahlil qilish uchun ekrandagi suzuvchi tugmani bosing</string>
+    <string name="notification_action_stop">To\'xtatish</string>
+    <string name="toast_overlay_required">Suzuvchi tugma uchun boshqa ilovalar ustida ko\'rsatish ruxsatnomasi zarur</string>
+    <string name="toast_service_started">Screen Lasso AI xizmati ishga tushirildi!</string>
+    <string name="toast_capture_declined">Ekran tasvirini olish ruxsati rad etildi</string>
+    <string name="toast_service_stopped">Xizmat to\'xtatildi</string>
+    <string name="error_no_projection">Ekran tasvirini olish ruxsati faol emas. Iltimos, Screen Lasso ilovasida \'Ruxsat berish va ishga tushirish\' tugmasini bosing.</string>
+    <string name="error_analyze_failed">Tanlangan sohani tahlil qilib bo\'lmadi.</string>
+    <string name="error_general_gemini">Gemini AI orqali ekran qismini tahlil qilishda xatolik yuz berdi.</string>
+</resources>

@@ -1,0 +1,6 @@
+{
+  "name": "Screen Lasso AI",
+  "description": "Overlay screen capture with freehand lasso selection and instant Gemini AI analysis.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
