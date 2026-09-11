@@ -1,4 +1,4 @@
-name: Build and Distribute APK
+name: Build and Distribute Android App
 
 on:
   push:
@@ -22,18 +22,11 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Generate Debug Keystore
-        run: |
-          keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
-          mkdir -p ~/.android
-          cp debug.keystore ~/.android/debug.keystore
+      - name: Make gradlew executable
+        run: chmod +x gradlew
 
-      - name: Ensure Gradle Wrapper Exists
-        run: |
-          if [ ! -f "./gradlew" ]; then
-            gradle wrapper
-          fi
-          chmod +x gradlew
+      - name: Create local.properties with Gemini Key
+        run: echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > local.properties
 
       - name: Build APK with Gradle
         env:
