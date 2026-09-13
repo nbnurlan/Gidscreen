@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "516526632347",
+    "project_id": "gidscreen",
+    "storage_bucket": "gidscreen.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:516526632347:android:d30e9a50fb95ddb3c6853e",
+        "android_client_info": {
+          "package_name": "com.aistudio.screenlasso.aiwzqp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD6JphB6U4JYrNqNvwc_wvFAATS1YPuUVY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:516526632347:android:8d41f56746bbbf82c6853e",
+        "android_client_info": {
+          "package_name": "com.nbnurlan.gidscreen"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD6JphB6U4JYrNqNvwc_wvFAATS1YPuUVY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
