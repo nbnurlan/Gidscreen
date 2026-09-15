@@ -3,15 +3,17 @@ package com.example.model
 import android.graphics.Bitmap
 
 enum class SelectionMode {
-    LASSO,
     RECTANGLE,
-    CIRCLE
+    LASSO,
+    CIRCLE,
+    POLYGON
 }
 
 data class ChatMessage(
     val id: String = java.util.UUID.randomUUID().toString(),
     val sender: MessageSender,
     val text: String,
+    val image: Bitmap? = null,
     val timestamp: Long = System.currentTimeMillis()
 )
 

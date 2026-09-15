@@ -15,7 +15,9 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.view.WindowManager
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -41,6 +43,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Code
@@ -48,6 +51,7 @@ import androidx.compose.material.icons.filled.CropFree
 import androidx.compose.material.icons.filled.Functions
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Layers
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
@@ -56,8 +60,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -88,14 +90,12 @@ import com.example.model.MessageSender
 import com.example.network.GeminiService
 import com.example.service.LassoOverlayService
 import com.example.service.MediaProjectionHolder
+import com.example.ui.CompactLanguageDropdown
 import com.example.ui.FloatingChatDialogContent
-import com.example.ui.GeminiApiStatusCard
-import com.example.ui.LanguageSelectorCard
 import com.example.ui.LassoSelectionContent
 import com.example.ui.MasterServiceCard
 import com.example.ui.PermissionStatusItem
-import com.example.ui.QuickGuideCard
-import com.example.ui.SampleContentCard
+import com.example.ui.SettingsContent
 import com.example.ui.theme.CyanGlow
 import com.example.ui.theme.DarkBorder
 import com.example.ui.theme.DarkSurface
@@ -117,6 +117,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.setFlags(
+            WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
+            WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED
+        )
         enableEdgeToEdge()
 
         if (intent?.getBooleanExtra(EXTRA_REQUEST_CAPTURE, false) == true) {
@@ -182,9 +186,8 @@ fun MainAppScreen(
     val inAppChatMessages = remember { mutableStateListOf<ChatMessage>() }
     var inAppThumbnail by remember { mutableStateOf<Bitmap?>(null) }
 
-    // Tab state (Control Center vs Test Sandbox)
-    var selectedTab by remember { mutableIntStateOf(0) }
-    var showTopBarLanguageMenu by remember { mutableStateOf(false) }
+    // Navigation state: Settings screen opened via gear icon at the top
+    var showSettingsScreen by remember { mutableStateOf(false) }
 
     val overlayRequiredMsg = stringResource(R.string.toast_overlay_required)
     val serviceStartedMsg = stringResource(R.string.toast_service_started)
@@ -242,81 +245,63 @@ fun MainAppScreen(
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.AutoAwesome,
-                                contentDescription = null,
-                                tint = CyanGlow,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Column {
-                                Text(
-                                    text = stringResource(R.string.app_name),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 18.sp
-                                )
-                                Text(
-                                    text = stringResource(R.string.app_subtitle),
-                                    fontSize = 11.sp,
-                                    color = CyanGlow
+                    navigationIcon = {
+                        if (showSettingsScreen) {
+                            IconButton(
+                                onClick = { showSettingsScreen = false },
+                                modifier = Modifier.testTag("settings_back_button")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = stringResource(R.string.btn_back),
+                                    tint = Color.White
                                 )
                             }
                         }
                     },
-                    actions = {
-                        Box {
-                            IconButton(
-                                onClick = { showTopBarLanguageMenu = true },
-                                modifier = Modifier.testTag("top_bar_language_button")
-                            ) {
+                    title = {
+                        if (showSettingsScreen) {
+                            Text(
+                                text = stringResource(R.string.settings_title),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp,
+                                color = Color.White
+                            )
+                        } else {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
-                                    imageVector = Icons.Default.Language,
-                                    contentDescription = stringResource(R.string.btn_language),
-                                    tint = CyanGlow
+                                    imageVector = Icons.Default.AutoAwesome,
+                                    contentDescription = null,
+                                    tint = CyanGlow,
+                                    modifier = Modifier.size(24.dp)
                                 )
-                            }
-
-                            DropdownMenu(
-                                expanded = showTopBarLanguageMenu,
-                                onDismissRequest = { showTopBarLanguageMenu = false },
-                                modifier = Modifier
-                                    .background(DarkSurface)
-                                    .border(1.dp, DarkBorder, RoundedCornerShape(8.dp))
-                            ) {
-                                LocaleHelper.supportedLanguages.forEach { lang ->
-                                    DropdownMenuItem(
-                                        text = {
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                            ) {
-                                                Text(text = lang.flag, fontSize = 16.sp)
-                                                Text(
-                                                    text = lang.nativeName,
-                                                    color = Color.White,
-                                                    fontSize = 13.sp,
-                                                    fontWeight = if (currentLang == lang.code) FontWeight.Bold else FontWeight.Normal
-                                                )
-                                                if (currentLang == lang.code) {
-                                                    Icon(
-                                                        imageVector = Icons.Default.Check,
-                                                        contentDescription = null,
-                                                        tint = CyanGlow,
-                                                        modifier = Modifier.size(16.dp)
-                                                    )
-                                                }
-                                            }
-                                        },
-                                        onClick = {
-                                            showTopBarLanguageMenu = false
-                                            LocaleHelper.setLanguage(context, lang.code)
-                                            val toastMsg = context.getString(R.string.toast_language_changed, lang.nativeName)
-                                            Toast.makeText(context, toastMsg, Toast.LENGTH_SHORT).show()
-                                        }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column {
+                                    Text(
+                                        text = stringResource(R.string.app_name),
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 18.sp
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.app_subtitle),
+                                        fontSize = 11.sp,
+                                        color = CyanGlow
                                     )
                                 }
+                            }
+                        }
+                    },
+                    actions = {
+                        if (!showSettingsScreen) {
+                            IconButton(
+                                onClick = { showSettingsScreen = true },
+                                modifier = Modifier.testTag("top_bar_settings_button")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Settings,
+                                    contentDescription = stringResource(R.string.settings_title),
+                                    tint = Color.White.copy(alpha = 0.9f)
+                                )
                             }
                         }
                     },
@@ -329,33 +314,39 @@ fun MainAppScreen(
             },
             containerColor = Color(0xFF070B14)
         ) { paddingValues ->
-            Column(
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
-                // Tab Navigation
-                TabRow(
-                    selectedTabIndex = selectedTab,
-                    containerColor = DarkSurface,
-                    contentColor = CyanGlow
-                ) {
-                    Tab(
-                        selected = selectedTab == 0,
-                        onClick = { selectedTab = 0 },
-                        text = { Text(stringResource(R.string.tab_control_center), fontWeight = FontWeight.SemiBold) },
-                        icon = { Icon(Icons.Default.Layers, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                if (showSettingsScreen) {
+                    BackHandler(enabled = true) {
+                        showSettingsScreen = false
+                    }
+                    // Settings Screen (Sozlamalar va Tilni o'zgartirish)
+                    SettingsContent(
+                        hasOverlayPermission = hasOverlayPermission,
+                        hasCaptureToken = hasCaptureToken,
+                        hasNotificationPermission = hasNotificationPermission,
+                        onOpenOverlayPermission = {
+                            val intent = Intent(
+                                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                Uri.parse("package:${context.packageName}")
+                            )
+                            overlayPermissionLauncher.launch(intent)
+                        },
+                        onOpenCapturePermission = {
+                            val projectionManager = context.getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+                            mediaProjectionLauncher.launch(projectionManager.createScreenCaptureIntent())
+                        },
+                        onOpenNotificationPermission = {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            }
+                        }
                     )
-                    Tab(
-                        selected = selectedTab == 1,
-                        onClick = { selectedTab = 1 },
-                        text = { Text(stringResource(R.string.tab_interactive_sandbox), fontWeight = FontWeight.SemiBold) },
-                        icon = { Icon(Icons.Default.CropFree, contentDescription = null, modifier = Modifier.size(18.dp)) }
-                    )
-                }
-
-                if (selectedTab == 0) {
-                    // Control Center
+                } else {
+                    // Control Center (Asosiy oyna)
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(16.dp),
@@ -389,153 +380,6 @@ fun MainAppScreen(
                                     }
                                 }
                             )
-                        }
-
-                        // In-App Language Selector Card
-                        item {
-                            LanguageSelectorCard(
-                                currentLanguage = currentLang,
-                                onLanguageSelected = { lang ->
-                                    LocaleHelper.setLanguage(context, lang.code)
-                                    val msg = context.getString(R.string.toast_language_changed, lang.nativeName)
-                                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                                }
-                            )
-                        }
-
-                        // Permissions Status Section
-                        item {
-                            Text(
-                                text = stringResource(R.string.section_permissions_title),
-                                color = Color.White,
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
-                            )
-                        }
-
-                        // Overlay Permission Item
-                        item {
-                            PermissionStatusItem(
-                                title = stringResource(R.string.perm_overlay_title),
-                                subtitle = stringResource(R.string.perm_overlay_desc),
-                                isGranted = hasOverlayPermission,
-                                onGrant = {
-                                    val intent = Intent(
-                                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                                        Uri.parse("package:${context.packageName}")
-                                    )
-                                    overlayPermissionLauncher.launch(intent)
-                                }
-                            )
-                        }
-
-                        // Screen Capture (MediaProjection API) Item
-                        item {
-                            PermissionStatusItem(
-                                title = stringResource(R.string.perm_capture_title),
-                                subtitle = stringResource(R.string.perm_capture_desc),
-                                isGranted = hasCaptureToken,
-                                onGrant = {
-                                    val projectionManager = context.getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-                                    mediaProjectionLauncher.launch(projectionManager.createScreenCaptureIntent())
-                                }
-                            )
-                        }
-
-                        // Notification Permission Item (Android 13+)
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            item {
-                                PermissionStatusItem(
-                                    title = stringResource(R.string.perm_notification_title),
-                                    subtitle = stringResource(R.string.perm_notification_desc),
-                                    isGranted = hasNotificationPermission,
-                                    onGrant = {
-                                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                                    }
-                                )
-                            }
-                        }
-
-                        // Gemini API Status Item
-                        item {
-                            GeminiApiStatusCard()
-                        }
-
-                        // Quick Guide Card
-                        item {
-                            QuickGuideCard()
-                        }
-                    }
-                } else {
-                    // Interactive Sandbox Tab
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        item {
-                            Text(
-                                text = stringResource(R.string.sandbox_title),
-                                color = Color.White,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = stringResource(R.string.sandbox_desc),
-                                color = Color.White.copy(alpha = 0.7f),
-                                fontSize = 13.sp
-                            )
-                        }
-
-                        // Sample Item 1: Code snippet
-                        item {
-                            SampleContentCard(
-                                title = stringResource(R.string.sandbox_sample1_title),
-                                icon = Icons.Default.Code,
-                                content = "def binary_search(arr, target):\n    low = 0\n    high = len(arr) # Bug: should be len(arr) - 1\n    while low <= high:\n        mid = (low + high) // 2\n        if arr[mid] == target:\n            return mid\n        elif arr[mid] < target:\n            low = mid + 1\n        else:\n            high = mid - 1\n    return -1",
-                                onTestLasso = {
-                                    showInAppLasso = true
-                                }
-                            )
-                        }
-
-                        // Sample Item 2: Math / Physics
-                        item {
-                            SampleContentCard(
-                                title = stringResource(R.string.sandbox_sample2_title),
-                                icon = Icons.Default.Functions,
-                                content = "Find the eigenvalues for the Hermitian matrix:\nH = [ 2   -i ]\n    [  i   2 ]\n\nCharacteristic equation: det(H - λI) = 0\n(2 - λ)^2 - (-i)(i) = (2 - λ)^2 - 1 = 0\nλ1 = 3, λ2 = 1",
-                                onTestLasso = {
-                                    showInAppLasso = true
-                                }
-                            )
-                        }
-
-                        // Test Action Buttons
-                        item {
-                            Button(
-                                onClick = { showInAppLasso = true },
-                                colors = ButtonDefaults.buttonColors(containerColor = CyanGlow),
-                                shape = RoundedCornerShape(12.dp),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(52.dp)
-                                    .testTag("test_lasso_selection_button")
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.CropFree,
-                                    contentDescription = null,
-                                    tint = Color.Black
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = stringResource(R.string.btn_launch_selector),
-                                    color = Color.Black,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp
-                                )
-                            }
                         }
                     }
                 }

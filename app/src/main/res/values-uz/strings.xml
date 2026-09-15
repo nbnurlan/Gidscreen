@@ -1,17 +1,30 @@
 <resources>
     <string name="app_name">Screen Lasso AI</string>
-    <string name="app_subtitle">Gemini 2.5 Flash asosida ishlaydi</string>
-    <string name="gemini_model_name">gemini-2.5-flash</string>
+    <string name="app_subtitle">Gemini 3.6 Flash asosida ishlaydi</string>
+    <string name="gemini_model_name">gemini-3.6-flash</string>
 
     <!-- Tabs -->
     <string name="tab_control_center">Boshqaruv markazi</string>
+    <string name="tab_settings">Sozlamalar</string>
     <string name="tab_interactive_sandbox">Interaktiv sinov maydoni</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Sozlamalar</string>
+    <string name="btn_back">Orqaga</string>
+    <string name="settings_subtitle">Til, AI modeli va suzuvchi tugma parametrlarini sozlang</string>
+    <string name="settings_section_general">Umumiy sozlamalar</string>
+    <string name="settings_section_ai">Gemini AI modeli</string>
+    <string name="settings_section_overlay">Suzuvchi tugma va lupa</string>
+    <string name="settings_section_about">Ilova haqida</string>
+    <string name="settings_overlay_tuck_info">Suzuvchi tugmani ekranning istalgan joyiga surishingiz yoki chetga berkitib qo\'yishingiz mumkin.</string>
+    <string name="settings_model_desc">Tezkor multimodal vizual tahlil, matn ajratish va kod yechish uchun Gemini 3.6 Flash ishlatiladi.</string>
+    <string name="settings_app_version">Versiya 1.2.0 • Android Overlay Lens</string>
 
     <!-- Master Service Card -->
     <string name="service_title">Qalqib chiquvchi lupa xizmati</string>
     <string name="service_status_running">Barcha ilovalar ustida ishlamoqda</string>
     <string name="service_status_ready">Faollashtirishga tayyor</string>
-    <string name="service_description">Xizmat yoqilganda, har qanday ilova ustida suzuvchi tugma paydo bo\'ladi. Ekranning istalgan qismini aylana yoki to\'rtburchak shaklida belgilang va Gemini 2.5 Flash orqali tahlil qiling.</string>
+    <string name="service_description">Xizmat yoqilganda, har qanday ilova ustida suzuvchi tugma paydo bo\'ladi. Ekranning istalgan qismini aylana yoki to\'rtburchak shaklida belgilang va Gemini 3.6 Flash orqali tahlil qiling.</string>
     <string name="btn_start_service">Suzuvchi lupani ishga tushirish</string>
     <string name="btn_stop_service">Xizmatni to\'xtatish</string>
 
@@ -36,7 +49,7 @@
 
     <!-- Gemini API -->
     <string name="api_card_title">Google Gemini API</string>
-    <string name="api_card_ready">Ulangan • gemini-2.5-flash tayyor</string>
+    <string name="api_card_ready">Ulangan • gemini-3.6-flash tayyor</string>
     <string name="api_card_pending">AI Studio sirlari • .env orqali sozlangan</string>
 
     <!-- Quick Guide -->
@@ -48,7 +61,7 @@
     <string name="guide_step3_title">Sohani belgilang</string>
     <string name="guide_step3_desc">Kod, savol, formula yoki rasmni lasso bilan o\'rab oling.</string>
     <string name="guide_step4_title">Tezkor AI xulosalari</string>
-    <string name="guide_step4_desc">Gemini 2.5 Flash o\'lchami o\'zgaruvchi chat oynasida javob beradi.</string>
+    <string name="guide_step4_desc">Gemini 3.6 Flash o\'lchami o\'zgaruvchi chat oynasida javob beradi.</string>
 
     <!-- Sandbox -->
     <string name="sandbox_title">Interaktiv sinov maydoni</string>
@@ -58,9 +71,33 @@
     <string name="btn_select_area">Sohani tanlash</string>
     <string name="btn_launch_selector">Screen Lasso tanlagichini ochish</string>
 
+    <!-- Lasso Canvas & Freeform Selection Feature -->
+    <string name="lasso_canvas_title">Lasso Kanvas</string>
+    <string name="lasso_canvas_subtitle">Erkin tanlash va AI mantiqiy tahlili</string>
+    <string name="lasso_canvas_card_title">Lasso Kanvas va Erkin Tanlash</string>
+    <string name="lasso_canvas_card_desc">Interaktiv kanvasdagi kod, formula yoki diagrammalarni erkin shaklda o\'rab, Gemini 3.6 Flash yordamida tezkor tahlil qiling.</string>
+    <string name="btn_open_lasso_canvas">Lasso Kanvasini ochish</string>
+    <string name="mode_freeform_lasso">Erkin Lasso</string>
+    <string name="mode_polygon_lasso">Ko\'pburchak Lasso</string>
+    <string name="btn_analyze_selection">Gemini 3.6 Flash bilan tahlil qilish</string>
+    <string name="btn_preview_cutout">Qirqilgan qismni ko\'rish</string>
+    <string name="btn_clear_selection">Tanlovni tozalash</string>
+    <string name="btn_close_loop">Shaklni yopish</string>
+    <string name="sample_code_title">Dastur kodi</string>
+    <string name="sample_math_title">Fizika va Matematika</string>
+    <string name="sample_diagram_title">Tizim diagrammasi</string>
+    <string name="sample_sketch_title">Chizma maydoni</string>
+    <string name="instruction_freeform">Ixtiyoriy sohani erkin shaklda o\'rab oling</string>
+    <string name="instruction_polygon">Nuqtalar qo\'yish uchun bosing • Yopish uchun boshiga bosing</string>
+    <string name="instruction_rect">To\'rtburchak shaklida tanlash uchun suring</string>
+    <string name="cutout_preview_title">Erkin qirqilgan qism</string>
+    <string name="cutout_preview_desc">Erkin lasso chizig\'i bo\'yicha aniq ajratib olingan piksellar.</string>
+
     <!-- Selection Overlay -->
     <string name="bubble_content_desc">Ekran tanlovi</string>
     <string name="bubble_sparkle_desc">AI nuri</string>
+    <string name="bubble_tuck_desc">Ekran chetiga berkitish</string>
+    <string name="bubble_untuck_desc">Tugmani chiqarib olish</string>
     <string name="mode_lasso">Lasso</string>
     <string name="mode_rect">To\'rtburchak</string>
     <string name="mode_circle">Doira</string>
@@ -79,12 +116,13 @@
     <string name="btn_drag_window">Oynani ko\'chirish</string>
     <string name="btn_language">Til</string>
     <string name="captured_screen_area">Olingan ekran sohasi</string>
-    <string name="analyzing_heading">gemini-2.5-flash bilan tahlil qilinmoqda...</string>
+    <string name="analyzing_heading">gemini-3.6-flash bilan tahlil qilinmoqda...</string>
     <string name="analyzing_subheading">Matn, kod, vizual elementlar va mantiq ajratib olinmoqda</string>
     <string name="error_heading">Tahlil xatosi</string>
     <string name="btn_retry_analysis">Qayta urinib ko\'rish</string>
+    <string name="btn_clear_chat">Suhbatni tozalash</string>
     <string name="sender_you">Siz</string>
-    <string name="sender_gemini">Gemini 2.5 Flash</string>
+    <string name="sender_gemini">Gemini 3.6 Flash</string>
     <string name="btn_copy_text">Matnni nusxalash</string>
     <string name="toast_copied">Buferga nusxalandi</string>
     <string name="prompt_explain_simply">Soddaroq tushuntiring</string>
@@ -107,4 +145,6 @@
     <string name="error_no_projection">Ekran tasvirini olish ruxsati faol emas. Iltimos, Screen Lasso ilovasida \'Ruxsat berish va ishga tushirish\' tugmasini bosing.</string>
     <string name="error_analyze_failed">Tanlangan sohani tahlil qilib bo\'lmadi.</string>
     <string name="error_general_gemini">Gemini AI orqali ekran qismini tahlil qilishda xatolik yuz berdi.</string>
+    <string name="error_api_key_leaked">Gemini API kaliti sizib chiqqanligi sababli Google tomonidan bekor qilingan. Iltimos, AI Studio Secrets paneliga yangi GEMINI_API_KEY kiriting.</string>
+    <string name="error_api_key_invalid">Gemini API kaliti yaroqsiz yoki kiritilmagan. Iltimos, AI Studio Secrets panelini tekshiring.</string>
 </resources>

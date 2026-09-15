@@ -1,17 +1,30 @@
 <resources>
     <string name="app_name">Screen Lasso AI</string>
-    <string name="app_subtitle">На базе Gemini 2.5 Flash</string>
-    <string name="gemini_model_name">gemini-2.5-flash</string>
+    <string name="app_subtitle">На базе Gemini 3.6 Flash</string>
+    <string name="gemini_model_name">gemini-3.6-flash</string>
 
     <!-- Tabs -->
     <string name="tab_control_center">Центр управления</string>
+    <string name="tab_settings">Настройки</string>
     <string name="tab_interactive_sandbox">Интерактивная песочница</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Настройки</string>
+    <string name="btn_back">Назад</string>
+    <string name="settings_subtitle">Настройка языка, модели ИИ и плавающей кнопки</string>
+    <string name="settings_section_general">Общие настройки</string>
+    <string name="settings_section_ai">Модель Gemini AI</string>
+    <string name="settings_section_overlay">Плавающая кнопка и лупа</string>
+    <string name="settings_section_about">О приложении</string>
+    <string name="settings_overlay_tuck_info">Вы можете перетащить плавающую кнопку в любое место экрана или спрятать к краю экрана.</string>
+    <string name="settings_model_desc">Использует Gemini 3.6 Flash для быстрого мультимодального анализа, распознавания текста и разбора кода.</string>
+    <string name="settings_app_version">Версия 1.2.0 • Android Overlay Lens</string>
 
     <!-- Master Service Card -->
     <string name="service_title">Служба экранной лупы</string>
     <string name="service_status_running">Работает поверх всех приложений</string>
     <string name="service_status_ready">Готова к запуску</string>
-    <string name="service_description">При активации поверх любого приложения появится плавающая кнопка. Выделите область экрана лассо или фигурой для мгновенного анализа с помощью Gemini 2.5 Flash.</string>
+    <string name="service_description">При активации поверх любого приложения появится плавающая кнопка. Выделите область экрана лассо или фигурой для мгновенного анализа с помощью Gemini 3.6 Flash.</string>
     <string name="btn_start_service">Запустить плавающую лупу</string>
     <string name="btn_stop_service">Остановить службу</string>
 
@@ -36,7 +49,7 @@
 
     <!-- Gemini API -->
     <string name="api_card_title">Google Gemini API</string>
-    <string name="api_card_ready">Подключено • gemini-2.5-flash готов</string>
+    <string name="api_card_ready">Подключено • gemini-3.6-flash готов</string>
     <string name="api_card_pending">Секреты AI Studio • Ключ настроен через .env</string>
 
     <!-- Quick Guide -->
@@ -48,7 +61,7 @@
     <string name="guide_step3_title">Выделите область</string>
     <string name="guide_step3_desc">Обведите лассо код, вопрос, формулу или изображение.</string>
     <string name="guide_step4_title">Мгновенный ИИ-анализ</string>
-    <string name="guide_step4_desc">Gemini 2.5 Flash объяснит контент в удобном окне чата.</string>
+    <string name="guide_step4_desc">Gemini 3.6 Flash объяснит контент в удобном окне чата.</string>
 
     <!-- Sandbox -->
     <string name="sandbox_title">Интерактивная песочница</string>
@@ -58,9 +71,33 @@
     <string name="btn_select_area">Выбрать область</string>
     <string name="btn_launch_selector">Открыть селектор Screen Lasso</string>
 
+    <!-- Lasso Canvas & Freeform Selection Feature -->
+    <string name="lasso_canvas_title">Холст Лассо</string>
+    <string name="lasso_canvas_subtitle">Свободное выделение и ИИ-анализ</string>
+    <string name="lasso_canvas_card_title">Холст Лассо и свободное выделение</string>
+    <string name="lasso_canvas_card_desc">Обводите произвольным контуром код, формулы или диаграммы на интерактивном холсте для мгновенного анализа с Gemini 3.6 Flash.</string>
+    <string name="btn_open_lasso_canvas">Открыть Холст Лассо</string>
+    <string name="mode_freeform_lasso">Свободное лассо</string>
+    <string name="mode_polygon_lasso">Полигональное лассо</string>
+    <string name="btn_analyze_selection">Анализировать с Gemini 3.6 Flash</string>
+    <string name="btn_preview_cutout">Предпросмотр фрагмента</string>
+    <string name="btn_clear_selection">Очистить выделение</string>
+    <string name="btn_close_loop">Замкнуть контур</string>
+    <string name="sample_code_title">Отладка кода</string>
+    <string name="sample_math_title">Физика и математика</string>
+    <string name="sample_diagram_title">Архитектура системы</string>
+    <string name="sample_sketch_title">Чистый холст</string>
+    <string name="instruction_freeform">Обведите пальцем любую область на холсте</string>
+    <string name="instruction_polygon">Нажимайте для точек полигона • Нажмите на первую для замыкания</string>
+    <string name="instruction_rect">Потяните по диагонали для прямоугольного выделения</string>
+    <string name="cutout_preview_title">Предпросмотр фрагмента лассо</string>
+    <string name="cutout_preview_desc">Фрагмент пикселей, точно вырезанный по вашей линии свободного лассо.</string>
+
     <!-- Selection Overlay -->
     <string name="bubble_content_desc">Выделение экрана</string>
     <string name="bubble_sparkle_desc">Искры ИИ</string>
+    <string name="bubble_tuck_desc">Спрятать к краю экрана</string>
+    <string name="bubble_untuck_desc">Вытащить плавающую кнопку</string>
     <string name="mode_lasso">Лассо</string>
     <string name="mode_rect">Прямоугольник</string>
     <string name="mode_circle">Круг</string>
@@ -79,12 +116,13 @@
     <string name="btn_drag_window">Переместить окно</string>
     <string name="btn_language">Язык</string>
     <string name="captured_screen_area">Снимок выделенной области</string>
-    <string name="analyzing_heading">Анализ с помощью gemini-2.5-flash...</string>
+    <string name="analyzing_heading">Анализ с помощью gemini-3.6-flash...</string>
     <string name="analyzing_subheading">Извлечение текста, кода, визуальных элементов и логики</string>
     <string name="error_heading">Ошибка анализа</string>
     <string name="btn_retry_analysis">Повторить анализ</string>
+    <string name="btn_clear_chat">Очистить чат</string>
     <string name="sender_you">Вы</string>
-    <string name="sender_gemini">Gemini 2.5 Flash</string>
+    <string name="sender_gemini">Gemini 3.6 Flash</string>
     <string name="btn_copy_text">Копировать текст</string>
     <string name="toast_copied">Скопировано в буфер обмена</string>
     <string name="prompt_explain_simply">Объясни простыми словами</string>
@@ -107,4 +145,6 @@
     <string name="error_no_projection">Разрешение на захват экрана не активно. Нажмите \'Предоставить и запустить\' в приложении Screen Lasso.</string>
     <string name="error_analyze_failed">Не удалось проанализировать выделенный фрагмент.</string>
     <string name="error_general_gemini">Ошибка при анализе фрагмента экрана через Gemini AI.</string>
+    <string name="error_api_key_leaked">Ключ Gemini API отозван Google из-за утечки. Пожалуйста, укажите новый GEMINI_API_KEY в панели Secrets AI Studio.</string>
+    <string name="error_api_key_invalid">Ключ Gemini API недействителен. Пожалуйста, проверьте GEMINI_API_KEY в панели Secrets AI Studio.</string>
 </resources>

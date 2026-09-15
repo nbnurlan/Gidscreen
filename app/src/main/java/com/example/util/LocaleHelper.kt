@@ -26,12 +26,16 @@ object LocaleHelper {
     const val LANG_RU = "ru"
 
     val supportedLanguages = listOf(
-        AppLanguage(code = LANG_EN, nameKey = "English", nativeName = "English", flag = "🇺🇸"),
-        AppLanguage(code = LANG_UZ, nameKey = "Uzbek", nativeName = "O\'zbekcha", flag = "🇺🇿"),
-        AppLanguage(code = LANG_RU, nameKey = "Russian", nativeName = "Русский", flag = "🇷🇺")
+        AppLanguage(code = LANG_UZ, nameKey = "Uzbek", nativeName = "O'zbekcha", flag = "🇺🇿"),
+        AppLanguage(code = LANG_RU, nameKey = "Russian", nativeName = "Русский", flag = "🇷🇺"),
+        AppLanguage(code = LANG_EN, nameKey = "English", nativeName = "English", flag = "🇬🇧")
     )
 
-    private val _currentLanguage = MutableStateFlow(LANG_EN)
+    fun getActiveLanguage(code: String): AppLanguage {
+        return supportedLanguages.firstOrNull { it.code == code } ?: supportedLanguages.first()
+    }
+
+    private val _currentLanguage = MutableStateFlow(LANG_UZ)
     val currentLanguage: StateFlow<String> = _currentLanguage.asStateFlow()
 
     fun init(context: Context) {
@@ -43,7 +47,7 @@ object LocaleHelper {
     fun getSavedLanguage(context: Context): String {
         val prefs = getPrefs(context)
         return prefs.getString(KEY_LANGUAGE, null) ?: run {
-            // If not saved, detect system locale if uz or ru, else fallback to en
+            // If not saved, detect system locale if uz or ru, else fallback to uz
             val currentAppLocales = AppCompatDelegate.getApplicationLocales()
             if (!currentAppLocales.isEmpty) {
                 currentAppLocales.get(0)?.language?.lowercase()?.let { lang ->
@@ -51,7 +55,7 @@ object LocaleHelper {
                 }
             }
             val systemLang = Locale.getDefault().language.lowercase()
-            if (supportedLanguages.any { it.code == systemLang }) systemLang else LANG_EN
+            if (supportedLanguages.any { it.code == systemLang }) systemLang else LANG_UZ
         }
     }
 
@@ -76,6 +80,8 @@ object LocaleHelper {
 
         val config = Configuration(context.resources.configuration)
         config.setLocale(locale)
+        val localeList = android.os.LocaleList(locale)
+        config.setLocales(localeList)
         config.setLayoutDirection(locale)
         return context.createConfigurationContext(config)
     }

@@ -48,15 +48,12 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -65,8 +62,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.model.SelectionMode
+import com.example.ui.CompactLanguageDropdown
 import com.example.ui.theme.CyanGlow
-import com.example.ui.theme.MaskDim
 import com.example.ui.theme.PurpleNeon
 import kotlin.math.abs
 import kotlin.math.max
@@ -91,7 +88,7 @@ fun LassoSelectionContent(
     val currentPath = remember(mode, freehandPoints.size, rectStart, rectCurrent) {
         val path = Path()
         when (mode) {
-            SelectionMode.LASSO -> {
+            SelectionMode.LASSO, SelectionMode.POLYGON -> {
                 if (freehandPoints.isNotEmpty()) {
                     path.moveTo(freehandPoints[0].x, freehandPoints[0].y)
                     for (i in 1 until freehandPoints.size) {
@@ -137,7 +134,7 @@ fun LassoSelectionContent(
     // Helper to calculate bounding box and submit
     fun completeSelection() {
         val bounds: RectF? = when (mode) {
-            SelectionMode.LASSO -> {
+            SelectionMode.LASSO, SelectionMode.POLYGON -> {
                 if (freehandPoints.size > 5) {
                     var minX = Float.MAX_VALUE
                     var minY = Float.MAX_VALUE
@@ -170,7 +167,7 @@ fun LassoSelectionContent(
         }
 
         if (bounds != null) {
-            val androidPath = if (mode == SelectionMode.LASSO && freehandPoints.size > 2) {
+            val androidPath = if ((mode == SelectionMode.LASSO || mode == SelectionMode.POLYGON) && freehandPoints.size > 2) {
                 currentPath.asAndroidPath()
             } else null
             onSelectionConfirmed(androidPath, bounds)
@@ -182,17 +179,16 @@ fun LassoSelectionContent(
             .fillMaxSize()
             .testTag("lasso_selection_screen")
     ) {
-        // Drawing Surface with Dark Mask & Cleared Selection Hole
+        // Drawing Surface - 100% transparent so all underlying apps and screen content are fully visible
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
-                .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
                 .pointerInput(mode) {
                     detectDragGestures(
                         onDragStart = { offset ->
                             isDrawing = true
                             when (mode) {
-                                SelectionMode.LASSO -> {
+                                SelectionMode.LASSO, SelectionMode.POLYGON -> {
                                     freehandPoints.clear()
                                     freehandPoints.add(offset)
                                 }
@@ -205,7 +201,7 @@ fun LassoSelectionContent(
                         onDrag = { change, dragAmount ->
                             change.consume()
                             when (mode) {
-                                SelectionMode.LASSO -> {
+                                SelectionMode.LASSO, SelectionMode.POLYGON -> {
                                     val last = freehandPoints.lastOrNull() ?: change.position
                                     val next = last + dragAmount
                                     freehandPoints.add(next)
@@ -228,18 +224,15 @@ fun LassoSelectionContent(
                     )
                 }
         ) {
-            // 1. Dark translucent mask covering everything outside
-            drawRect(color = MaskDim)
-
-            // 2. Clear out inside of drawn path so underlying screen content is 100% visible
+            // No dark mask: background is 100% transparent and clear!
             if (!currentPath.isEmpty) {
+                // Subtle transparent neon tint inside the drawn path so user clearly sees the framed region
                 drawPath(
                     path = currentPath,
-                    color = Color.Transparent,
-                    blendMode = BlendMode.Clear
+                    color = CyanGlow.copy(alpha = 0.12f)
                 )
 
-                // 3. Glowing neon contour border around selected area
+                // Glowing neon contour border around selected area (Solid continuous line)
                 val neonBrush = Brush.linearGradient(
                     colors = listOf(CyanGlow, PurpleNeon, CyanGlow)
                 )
@@ -249,15 +242,18 @@ fun LassoSelectionContent(
                     brush = neonBrush,
                     style = Stroke(
                         width = 3.dp.toPx(),
-                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(24f, 12f), 0f)
+                        pathEffect = null
                     )
                 )
 
                 // Subtle inner accent stroke
                 drawPath(
                     path = currentPath,
-                    color = Color.White.copy(alpha = 0.6f),
-                    style = Stroke(width = 1.dp.toPx())
+                    color = Color.White.copy(alpha = 0.7f),
+                    style = Stroke(
+                        width = 1.dp.toPx(),
+                        pathEffect = null
+                    )
                 )
             }
         }
@@ -267,11 +263,11 @@ fun LassoSelectionContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .statusBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = 8.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Surface(
-                color = Color(0xDD0F172A),
+                color = Color(0xEE0F172A),
                 shape = RoundedCornerShape(28.dp),
                 shadowElevation = 8.dp,
                 modifier = Modifier
@@ -279,24 +275,11 @@ fun LassoSelectionContent(
                     .clip(RoundedCornerShape(28.dp))
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    horizontalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
-                    // Lasso Mode
-                    ModePill(
-                        icon = Icons.Default.Gesture,
-                        label = stringResource(R.string.mode_lasso),
-                        isSelected = mode == SelectionMode.LASSO,
-                        onClick = {
-                            mode = SelectionMode.LASSO
-                            freehandPoints.clear()
-                            rectStart = null
-                            rectCurrent = null
-                        }
-                    )
-
-                    // Rectangle Mode
+                    // 1. Rectangle Mode (Default & First)
                     ModePill(
                         icon = Icons.Default.CropLandscape,
                         label = stringResource(R.string.mode_rect),
@@ -309,7 +292,20 @@ fun LassoSelectionContent(
                         }
                     )
 
-                    // Circle Mode
+                    // 2. Lasso Mode
+                    ModePill(
+                        icon = Icons.Default.Gesture,
+                        label = stringResource(R.string.mode_lasso),
+                        isSelected = mode == SelectionMode.LASSO,
+                        onClick = {
+                            mode = SelectionMode.LASSO
+                            freehandPoints.clear()
+                            rectStart = null
+                            rectCurrent = null
+                        }
+                    )
+
+                    // 3. Circle Mode
                     ModePill(
                         icon = Icons.Default.RadioButtonUnchecked,
                         label = stringResource(R.string.mode_circle),
@@ -322,74 +318,54 @@ fun LassoSelectionContent(
                         }
                     )
 
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(2.dp))
 
-                    // Clear button
+                    // Compact Flag Language Selector Dropdown
+                    CompactLanguageDropdown(testTag = "overlay_language_button")
+
+                    Spacer(modifier = Modifier.width(2.dp))
+
+                    // Undo / Back button (Dismisses selection overlay, returns to screen)
                     IconButton(
                         onClick = {
                             freehandPoints.clear()
                             rectStart = null
                             rectCurrent = null
+                            onDismiss()
                         },
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.12f))
+                            .testTag("lasso_undo_button")
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.Undo,
-                            contentDescription = stringResource(R.string.btn_reset_selection),
-                            tint = Color.White.copy(alpha = 0.8f),
-                            modifier = Modifier.size(20.dp)
+                            contentDescription = stringResource(R.string.btn_cancel),
+                            tint = Color.White,
+                            modifier = Modifier.size(19.dp)
                         )
                     }
 
-                    // Cancel button
+                    // Cancel / Close 'X' button
                     IconButton(
-                        onClick = onDismiss,
+                        onClick = {
+                            freehandPoints.clear()
+                            rectStart = null
+                            rectCurrent = null
+                            onDismiss()
+                        },
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.1f))
+                            .background(Color.White.copy(alpha = 0.15f))
+                            .testTag("lasso_close_button")
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = stringResource(R.string.btn_cancel),
                             tint = Color.White,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Informational badge with AI sparkle
-            AnimatedVisibility(
-                visible = !isDrawing,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                Surface(
-                    color = Color(0xCC1E1B4B),
-                    shape = RoundedCornerShape(16.dp),
-                    shadowElevation = 4.dp
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.AutoAwesome,
-                            contentDescription = null,
-                            tint = CyanGlow,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Text(
-                            text = stringResource(R.string.selection_instruction_badge),
-                            color = Color.White,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium
+                            modifier = Modifier.size(19.dp)
                         )
                     }
                 }
@@ -413,23 +389,23 @@ private fun ModePill(
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(3.dp),
         modifier = Modifier
             .clip(RoundedCornerShape(20.dp))
             .background(bgBrush)
             .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 6.dp)
+            .padding(horizontal = 7.dp, vertical = 5.dp)
     ) {
         Icon(
             imageVector = icon,
             contentDescription = label,
             tint = if (isSelected) Color.Black else Color.White.copy(alpha = 0.8f),
-            modifier = Modifier.size(18.dp)
+            modifier = Modifier.size(16.dp)
         )
         Text(
             text = label,
             color = if (isSelected) Color.Black else Color.White.copy(alpha = 0.8f),
-            fontSize = 12.sp,
+            fontSize = 11.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
         )
     }

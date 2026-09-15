@@ -44,9 +44,12 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.CropFree
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.DropdownMenu
@@ -102,6 +105,7 @@ fun FloatingChatDialogContent(
     onClose: () -> Unit,
     onDragDelta: (Float, Float) -> Unit,
     onResizeDelta: (Float, Float) -> Unit,
+    onClearChat: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -109,7 +113,6 @@ fun FloatingChatDialogContent(
 
     var isMinimized by remember { mutableStateOf(false) }
     var followUpInput by remember { mutableStateOf("") }
-    var showLanguageMenu by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
 
     // Auto scroll on new message
@@ -265,61 +268,23 @@ fun FloatingChatDialogContent(
                     )
                 }
 
-                // In-Overlay Language Selector Menu Button
-                Box {
+                // In-Overlay Compact Flag Language Selector Dropdown
+                CompactLanguageDropdown()
+
+                Spacer(modifier = Modifier.width(2.dp))
+
+                // Clear Chat Session Button (if messages exist)
+                if (chatMessages.isNotEmpty() && onClearChat != null) {
                     IconButton(
-                        onClick = { showLanguageMenu = true },
-                        modifier = Modifier
-                            .size(30.dp)
-                            .testTag("chat_language_button")
+                        onClick = onClearChat,
+                        modifier = Modifier.size(30.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Language,
-                            contentDescription = stringResource(R.string.btn_language),
-                            tint = CyanGlow,
+                            imageVector = Icons.Default.DeleteOutline,
+                            contentDescription = stringResource(R.string.btn_clear_chat),
+                            tint = Color.White.copy(alpha = 0.65f),
                             modifier = Modifier.size(18.dp)
                         )
-                    }
-
-                    DropdownMenu(
-                        expanded = showLanguageMenu,
-                        onDismissRequest = { showLanguageMenu = false },
-                        modifier = Modifier
-                            .background(Color(0xFF1E293B))
-                            .border(1.dp, DarkBorder, RoundedCornerShape(8.dp))
-                    ) {
-                        LocaleHelper.supportedLanguages.forEach { lang ->
-                            DropdownMenuItem(
-                                text = {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        Text(text = lang.flag, fontSize = 16.sp)
-                                        Text(
-                                            text = lang.nativeName,
-                                            color = Color.White,
-                                            fontSize = 13.sp,
-                                            fontWeight = if (currentLang == lang.code) FontWeight.Bold else FontWeight.Normal
-                                        )
-                                        if (currentLang == lang.code) {
-                                            Icon(
-                                                imageVector = Icons.Default.Check,
-                                                contentDescription = null,
-                                                tint = CyanGlow,
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                        }
-                                    }
-                                },
-                                onClick = {
-                                    showLanguageMenu = false
-                                    LocaleHelper.setLanguage(context, lang.code)
-                                    val toastMsg = context.getString(R.string.toast_language_changed, lang.nativeName)
-                                    Toast.makeText(context, toastMsg, Toast.LENGTH_SHORT).show()
-                                }
-                            )
-                        }
                     }
                 }
 
@@ -377,7 +342,7 @@ fun FloatingChatDialogContent(
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    // Item 1: Captured Screen Thumbnail
+                    // Item 1: Captured Screen Thumbnail (shown if not already in chat items)
                     val thumb = when (analysisState) {
                         is AnalysisState.Analyzing -> analysisState.thumbnail
                         is AnalysisState.Success -> analysisState.thumbnail
@@ -385,7 +350,7 @@ fun FloatingChatDialogContent(
                         else -> null
                     }
 
-                    if (thumb != null) {
+                    if (thumb != null && chatMessages.none { it.image != null }) {
                         item {
                             ScreenThumbnailCard(bitmap = thumb)
                         }
@@ -677,34 +642,77 @@ private fun ErrorCard(message: String, onRetry: () -> Unit) {
                     )
                 }
 
+                val isCapturePermissionError = message.contains("capture permission", ignoreCase = true) ||
+                    message.contains("MediaProjection", ignoreCase = true) ||
+                    message.contains("Screen capture", ignoreCase = true) ||
+                    message.contains("ruxsat berish", ignoreCase = true) ||
+                    message.contains("предоставить", ignoreCase = true)
+
                 val context = LocalContext.current
-                Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(CyanGlow.copy(alpha = 0.2f))
-                        .clickable {
-                            val intent = Intent(context, MainActivity::class.java).apply {
-                                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                                putExtra(MainActivity.EXTRA_REQUEST_CAPTURE, true)
+                if (isCapturePermissionError) {
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(CyanGlow.copy(alpha = 0.2f))
+                            .clickable {
+                                val intent = Intent(context, MainActivity::class.java).apply {
+                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                                    putExtra(MainActivity.EXTRA_REQUEST_CAPTURE, true)
+                                }
+                                context.startActivity(intent)
                             }
-                            context.startActivity(intent)
-                        }
-                        .padding(horizontal = 10.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.AutoAwesome,
-                        contentDescription = stringResource(R.string.btn_grant),
-                        tint = CyanGlow,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = stringResource(R.string.btn_grant),
-                        color = CyanGlow,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = stringResource(R.string.btn_grant),
+                            tint = CyanGlow,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = stringResource(R.string.btn_grant),
+                            color = CyanGlow,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+
+                val isApiKeyError = message.contains("leaked", ignoreCase = true) ||
+                    message.contains("kaliti", ignoreCase = true) ||
+                    message.contains("ключ", ignoreCase = true) ||
+                    message.contains("GEMINI_API_KEY", ignoreCase = true)
+
+                if (isApiKeyError) {
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(Color(0xFFF59E0B).copy(alpha = 0.2f))
+                            .clickable {
+                                val intent = Intent(context, MainActivity::class.java).apply {
+                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                                }
+                                context.startActivity(intent)
+                            }
+                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Key,
+                            contentDescription = null,
+                            tint = Color(0xFFF59E0B),
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Secrets • Key",
+                            color = Color(0xFFF59E0B),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                 }
             }
         }
@@ -760,6 +768,21 @@ private fun ChatBubbleItem(
                         }
                     }
                 }
+
+                if (message.image != null) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Image(
+                        bitmap = message.image.asImageBitmap(),
+                        contentDescription = stringResource(R.string.captured_screen_area),
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 140.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color.Black)
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(4.dp))
                 SelectionContainer {
                     Text(

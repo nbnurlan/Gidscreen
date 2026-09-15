@@ -142,15 +142,6 @@ fun MasterServiceCard(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            Text(
-                text = stringResource(R.string.service_description),
-                color = Color.White.copy(alpha = 0.75f),
-                fontSize = 13.sp,
-                lineHeight = 18.sp
-            )
-
-            Spacer(modifier = Modifier.height(14.dp))
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -200,106 +191,6 @@ fun MasterServiceCard(
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp
                         )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun LanguageSelectorCard(
-    currentLanguage: String,
-    onLanguageSelected: (AppLanguage) -> Unit
-) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, DarkBorder),
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(6.dp, RoundedCornerShape(16.dp))
-            .testTag("language_selector_card")
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(CyanGlow.copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Language,
-                        contentDescription = null,
-                        tint = CyanGlow,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-                Column {
-                    Text(
-                        text = stringResource(R.string.language_settings_title),
-                        color = Color.White,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = stringResource(R.string.language_settings_desc),
-                        color = Color.White.copy(alpha = 0.6f),
-                        fontSize = 11.sp
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // 3 Horizontal Language Selectable Pills
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                LocaleHelper.supportedLanguages.forEach { lang ->
-                    val isSelected = currentLanguage == lang.code
-                    Surface(
-                        color = if (isSelected) CyanGlow.copy(alpha = 0.18f) else Color(0xFF0F172A),
-                        shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(
-                            width = if (isSelected) 1.5.dp else 1.dp,
-                            color = if (isSelected) CyanGlow else DarkBorder
-                        ),
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { onLanguageSelected(lang) }
-                            .testTag("lang_button_${lang.code}")
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(vertical = 10.dp, horizontal = 6.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Text(text = lang.flag, fontSize = 20.sp)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = lang.nativeName,
-                                color = if (isSelected) CyanGlow else Color.White,
-                                fontSize = 12.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                            )
-                            if (isSelected) {
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = null,
-                                    tint = CyanGlow,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                            }
-                        }
                     }
                 }
             }

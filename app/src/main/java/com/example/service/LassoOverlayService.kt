@@ -15,10 +15,14 @@ import android.media.projection.MediaProjectionManager
 import android.os.Build
 import android.os.IBinder
 import android.util.DisplayMetrics
+import android.view.ContextThemeWrapper
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
+import android.view.ViewConfiguration
 import android.view.WindowInsets
 import android.view.WindowManager
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.ComposeView
@@ -29,7 +33,10 @@ import com.example.R
 import com.example.model.AnalysisState
 import com.example.model.ChatMessage
 import com.example.model.MessageSender
+import com.example.network.ApiKeyInvalidException
+import com.example.network.ApiKeyLeakedException
 import com.example.network.GeminiService
+import com.example.ui.DockSide
 import com.example.ui.FloatingBubbleContent
 import com.example.ui.FloatingChatDialogContent
 import com.example.ui.LassoSelectionContent
@@ -63,6 +70,8 @@ class LassoOverlayService : Service() {
     // Overlay Views
     private var bubbleView: ComposeView? = null
     private var bubbleParams: WindowManager.LayoutParams? = null
+    private val isBubbleTuckedState = mutableStateOf(false)
+    private val bubbleDockSideState = mutableStateOf(DockSide.LEFT)
 
     private var selectionView: ComposeView? = null
     private var selectionParams: WindowManager.LayoutParams? = null
@@ -161,36 +170,141 @@ class LassoOverlayService : Service() {
     }
 
     // -------------------------------------------------------------
-    // Feature 1: Floating Action Button
+    // Feature 1: Floating Action Button (Movable Anywhere & Edge-Tuckable)
     // -------------------------------------------------------------
     @SuppressLint("ClickableViewAccessibility")
     private fun showFloatingBubble() {
         if (bubbleView != null) return
+
+        val displayMetrics = resources.displayMetrics
+        val screenHeight = displayMetrics.heightPixels
 
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
+                    WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
             x = 24
-            y = 300
+            y = screenHeight / 3
         }
         bubbleParams = params
 
-        val view = ComposeView(this).apply {
+        val themedContext = ContextThemeWrapper(this, R.style.Theme_MyApplication)
+        val view = ComposeView(themedContext).apply {
             bubbleLifecycleOwner.attachToView(this)
             setContent {
                 MyApplicationTheme {
+                    val isTucked by isBubbleTuckedState
+                    val dockSide by bubbleDockSideState
                     FloatingBubbleContent(
+                        isTucked = isTucked,
+                        dockSide = dockSide,
                         onClick = {
                             showSelectionOverlay()
+                        },
+                        onTuckClick = {
+                            tuckBubbleToEdge()
+                        },
+                        onUntuckClick = {
+                            untuckBubbleFromEdge()
                         }
                     )
                 }
+            }
+        }
+
+        // Touch & Drag listener for free placement anywhere on screen & edge docking
+        var initialX = 0
+        var initialY = 0
+        var initialTouchX = 0f
+        var initialTouchY = 0f
+        var isDragging = false
+        val touchSlop = ViewConfiguration.get(this).scaledTouchSlop
+
+        view.setOnTouchListener { _, event ->
+            val currentParams = bubbleParams ?: return@setOnTouchListener false
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    initialX = currentParams.x
+                    initialY = currentParams.y
+                    initialTouchX = event.rawX
+                    initialTouchY = event.rawY
+                    isDragging = false
+                    true
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    val dx = (event.rawX - initialTouchX).toInt()
+                    val dy = (event.rawY - initialTouchY).toInt()
+                    val distance = kotlin.math.hypot(dx.toDouble(), dy.toDouble())
+
+                    if (!isDragging && distance > touchSlop) {
+                        isDragging = true
+                        // When user pulls the edge tab or drags bubble, untuck so it floats with finger
+                        if (isBubbleTuckedState.value) {
+                            isBubbleTuckedState.value = false
+                        }
+                    }
+
+                    if (isDragging) {
+                        val dm = resources.displayMetrics
+                        val maxCoordX = (dm.widthPixels - 60).coerceAtLeast(0)
+                        val maxCoordY = (dm.heightPixels - 120).coerceAtLeast(0)
+
+                        currentParams.x = (initialX + dx).coerceIn(0, maxCoordX)
+                        currentParams.y = (initialY + dy).coerceIn(40, maxCoordY)
+
+                        bubbleDockSideState.value = if (currentParams.x < dm.widthPixels / 2) {
+                            DockSide.LEFT
+                        } else {
+                            DockSide.RIGHT
+                        }
+
+                        try {
+                            windowManager.updateViewLayout(view, currentParams)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                    true
+                }
+                MotionEvent.ACTION_UP -> {
+                    if (!isDragging) {
+                        // Clean tap without drag: launch screen selection overlay
+                        showSelectionOverlay()
+                    } else {
+                        // Drag completed: check if placed near screen edge to tuck
+                        val dm = resources.displayMetrics
+                        val edgeThreshold = 130
+                        val isNearLeft = currentParams.x < edgeThreshold
+                        val isNearRight = currentParams.x > (dm.widthPixels - edgeThreshold - 80)
+
+                        if (isNearLeft) {
+                            bubbleDockSideState.value = DockSide.LEFT
+                            isBubbleTuckedState.value = true
+                            currentParams.x = 0
+                        } else if (isNearRight) {
+                            bubbleDockSideState.value = DockSide.RIGHT
+                            isBubbleTuckedState.value = true
+                            currentParams.x = dm.widthPixels - 48
+                        } else {
+                            // Freely positioned anywhere on screen
+                            isBubbleTuckedState.value = false
+                        }
+
+                        try {
+                            windowManager.updateViewLayout(view, currentParams)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                    true
+                }
+                else -> false
             }
         }
 
@@ -198,6 +312,34 @@ class LassoOverlayService : Service() {
         try {
             windowManager.addView(view, params)
             bubbleView = view
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun tuckBubbleToEdge() {
+        val currentParams = bubbleParams ?: return
+        val currentView = bubbleView ?: return
+        val dm = resources.displayMetrics
+        val side = if (currentParams.x < dm.widthPixels / 2) DockSide.LEFT else DockSide.RIGHT
+        bubbleDockSideState.value = side
+        isBubbleTuckedState.value = true
+        currentParams.x = if (side == DockSide.LEFT) 0 else (dm.widthPixels - 48)
+        try {
+            windowManager.updateViewLayout(currentView, currentParams)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun untuckBubbleFromEdge() {
+        val currentParams = bubbleParams ?: return
+        val currentView = bubbleView ?: return
+        val dm = resources.displayMetrics
+        isBubbleTuckedState.value = false
+        currentParams.x = if (bubbleDockSideState.value == DockSide.LEFT) 36 else (dm.widthPixels - 180)
+        try {
+            windowManager.updateViewLayout(currentView, currentParams)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -230,7 +372,8 @@ class LassoOverlayService : Service() {
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
                     WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
-                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                    WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
@@ -240,7 +383,8 @@ class LassoOverlayService : Service() {
         }
         selectionParams = params
 
-        val view = ComposeView(this).apply {
+        val themedContext = ContextThemeWrapper(this, R.style.Theme_MyApplication)
+        val view = ComposeView(themedContext).apply {
             selectionLifecycleOwner.attachToView(this)
             setContent {
                 MyApplicationTheme {
@@ -321,12 +465,12 @@ class LassoOverlayService : Service() {
         bubbleView?.visibility = View.GONE
         chatView?.visibility = View.GONE
 
-        // Invalidate any previously cached frame so the capture gets a clean, fresh frame
-        ScreenCaptureHelper.invalidateFrame()
+        val captureStartTime = System.currentTimeMillis()
+        ScreenCaptureHelper.prepareForCapture(captureStartTime)
 
         serviceScope.launch {
             // Delay to ensure the overlay layers have cleared from GPU compositing & SurfaceFlinger
-            delay(150)
+            delay(100)
 
             var projection = MediaProjectionHolder.mediaProjection
 
@@ -351,7 +495,8 @@ class LassoOverlayService : Service() {
                 context = this@LassoOverlayService,
                 mediaProjection = projection,
                 selectionPath = screenPath,
-                boundingBox = screenBoundingBox
+                boundingBox = screenBoundingBox,
+                minTimestamp = captureStartTime
             )
 
             // Remove selection overlay completely now that capture is done
@@ -373,13 +518,35 @@ class LassoOverlayService : Service() {
                 return@launch
             }
 
-            // Immediately show floating chat window and trigger auto AI analysis
+            // Immediately show floating chat window and trigger multi-turn AI analysis
             analysisState.value = AnalysisState.Analyzing(croppedBitmap)
-            chatMessages.clear()
             showFloatingChatDialog()
 
-            // Automatically call Gemini 2.5 Flash without requiring manual text input
-            val result = GeminiService.analyzeScreenCrop(croppedBitmap)
+            val captureNumber = chatMessages.count { it.image != null } + 1
+            val currentLang = LocaleHelper.currentLanguage.value
+            val userCapturePrompt = if (chatMessages.isEmpty()) {
+                GeminiService.getDefaultAnalysisPrompt()
+            } else {
+                when (currentLang) {
+                    LocaleHelper.LANG_RU -> "Фрагмент №$captureNumber: Проанализируйте новый выделенный фрагмент экрана в контексте нашего диалога."
+                    LocaleHelper.LANG_EN -> "Capture #$captureNumber: Analyze this new screen selection in the context of our ongoing conversation."
+                    else -> "№$captureNumber tanlov: Ushbu yangi belgilangan ekran qismini davom etayotgan suhbatimiz kontekstida tahlil qiling."
+                }
+            }
+
+            val userMsg = ChatMessage(
+                sender = MessageSender.USER,
+                text = userCapturePrompt,
+                image = croppedBitmap
+            )
+            chatMessages.add(userMsg)
+
+            // Continue persistent multi-turn conversation with all previous context + new capture
+            val result = GeminiService.continueChat(
+                history = chatMessages.dropLast(1),
+                newQuestion = userCapturePrompt,
+                bitmap = croppedBitmap
+            )
 
             result.onSuccess { explanation ->
                 analysisState.value = AnalysisState.Success(explanation, croppedBitmap)
@@ -390,8 +557,13 @@ class LassoOverlayService : Service() {
                     )
                 )
             }.onFailure { error ->
+                val localizedMessage = when (error) {
+                    is ApiKeyLeakedException -> getString(R.string.error_api_key_leaked)
+                    is ApiKeyInvalidException -> getString(R.string.error_api_key_invalid)
+                    else -> error.message ?: getString(R.string.error_general_gemini)
+                }
                 analysisState.value = AnalysisState.Error(
-                    message = error.message ?: getString(R.string.error_general_gemini),
+                    message = localizedMessage,
                     thumbnail = croppedBitmap
                 )
             }
@@ -418,7 +590,8 @@ class LassoOverlayService : Service() {
             defaultHeight,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                    WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
+                    WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH or
+                    WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.CENTER
@@ -427,7 +600,8 @@ class LassoOverlayService : Service() {
         }
         chatParams = params
 
-        val view = ComposeView(this).apply {
+        val themedContext = ContextThemeWrapper(this, R.style.Theme_MyApplication)
+        val view = ComposeView(themedContext).apply {
             chatLifecycleOwner.attachToView(this)
             setContent {
                 MyApplicationTheme {
@@ -471,6 +645,11 @@ class LassoOverlayService : Service() {
                             try {
                                 windowManager.updateViewLayout(chatView, cp)
                             } catch (_: Exception) {}
+                        },
+                        onClearChat = {
+                            chatMessages.clear()
+                            currentBitmap = null
+                            analysisState.value = AnalysisState.Idle
                         }
                     )
                 }
@@ -495,7 +674,7 @@ class LassoOverlayService : Service() {
             val result = GeminiService.continueChat(
                 history = chatMessages.dropLast(1),
                 newQuestion = question,
-                bitmap = currentBitmap
+                bitmap = null
             )
             result.onSuccess { answer ->
                 chatMessages.add(
@@ -515,14 +694,24 @@ class LassoOverlayService : Service() {
     private fun retryAnalysis(bitmap: Bitmap) {
         analysisState.value = AnalysisState.Analyzing(bitmap)
         serviceScope.launch {
-            val result = GeminiService.analyzeScreenCrop(bitmap)
+            val userPrompt = chatMessages.lastOrNull { it.sender == MessageSender.USER }?.text
+                ?: GeminiService.getDefaultAnalysisPrompt()
+            val result = GeminiService.continueChat(
+                history = chatMessages.filter { it.sender != MessageSender.SYSTEM }.dropLast(1),
+                newQuestion = userPrompt,
+                bitmap = bitmap
+            )
             result.onSuccess { explanation ->
                 analysisState.value = AnalysisState.Success(explanation, bitmap)
-                chatMessages.clear()
                 chatMessages.add(ChatMessage(sender = MessageSender.AI, text = explanation))
             }.onFailure { error ->
+                val localizedMessage = when (error) {
+                    is ApiKeyLeakedException -> getString(R.string.error_api_key_leaked)
+                    is ApiKeyInvalidException -> getString(R.string.error_api_key_invalid)
+                    else -> error.message ?: getString(R.string.error_general_gemini)
+                }
                 analysisState.value = AnalysisState.Error(
-                    message = error.message ?: "Analysis retry failed.",
+                    message = localizedMessage,
                     thumbnail = bitmap
                 )
             }
@@ -538,6 +727,7 @@ class LassoOverlayService : Service() {
             }
             chatView = null
         }
+        chatLifecycleOwner.onStop()
         bubbleView?.visibility = View.VISIBLE
     }
 

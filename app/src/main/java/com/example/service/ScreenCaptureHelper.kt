@@ -39,7 +39,9 @@ object ScreenCaptureHelper {
     private var handler: Handler? = null
 
     private val sessionLock = Any()
-    private var reusableBitmap: Bitmap? = null
+    private var latestBitmap: Bitmap? = null
+    private var latestBitmapTimestamp: Long = 0L
+    private var captureRequestedTimestamp: Long = 0L
     private var pendingContinuation: CancellableContinuation<Bitmap?>? = null
 
     private var currentWidth: Int = 0
@@ -115,23 +117,18 @@ object ScreenCaptureHelper {
                 var image: Image? = null
                 try {
                     image = ir.acquireLatestImage() ?: return@setOnImageAvailableListener
+                    val bitmap = convertImageToBitmap(image, width, height) ?: return@setOnImageAvailableListener
 
-                    // CRITICAL EFFICIENCY FIX:
-                    // Only process and allocate Bitmaps when a capture is actively requested.
-                    // When idle, closing the image buffer immediately uses 0 CPU and 0 MB memory allocations.
-                    val cont = synchronized(sessionLock) {
-                        val c = pendingContinuation
-                        pendingContinuation = null
-                        c
-                    }
+                    synchronized(sessionLock) {
+                        latestBitmap?.recycle()
+                        latestBitmap = bitmap
+                        latestBitmapTimestamp = System.currentTimeMillis()
 
-                    if (cont != null && cont.isActive) {
-                        val bitmap = convertImageToBitmap(image, width, height)
-                        synchronized(sessionLock) {
-                            reusableBitmap?.recycle()
-                            reusableBitmap = bitmap
+                        val cont = pendingContinuation
+                        if (cont != null && cont.isActive) {
+                            pendingContinuation = null
+                            cont.resume(bitmap.copy(Bitmap.Config.ARGB_8888, true))
                         }
-                        cont.resume(bitmap?.copy(Bitmap.Config.ARGB_8888, true))
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "Error acquiring image frame", e)
@@ -177,39 +174,46 @@ object ScreenCaptureHelper {
         if (planes.isEmpty()) return null
 
         val plane = planes[0]
-        val buffer = plane.buffer
+        val buffer = plane.buffer ?: return null
         val pixelStride = plane.pixelStride
         val rowStride = plane.rowStride
         val rowPadding = rowStride - pixelStride * targetWidth
 
         return try {
-            if (rowPadding == 0 && buffer.remaining() >= targetWidth * targetHeight * pixelStride) {
-                val bitmap = Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888)
-                buffer.rewind()
-                bitmap.copyPixelsFromBuffer(buffer)
-                bitmap
+            val bitmapWidth = if (pixelStride > 0) {
+                targetWidth + rowPadding / pixelStride
             } else {
-                // Handle hardware stride padding
-                val cleanBuffer = ByteBuffer.allocateDirect(targetWidth * targetHeight * 4)
-                val rowBytes = targetWidth * pixelStride
-                for (row in 0 until targetHeight) {
-                    val srcPos = row * rowStride
-                    buffer.position(srcPos)
-                    val oldLimit = buffer.limit()
-                    val availableInRow = (buffer.capacity() - srcPos).coerceAtLeast(0)
-                    val bytesToCopy = rowBytes.coerceAtMost(availableInRow)
-                    buffer.limit(srcPos + bytesToCopy)
-                    cleanBuffer.put(buffer)
-                    buffer.limit(oldLimit)
-                }
-                cleanBuffer.rewind()
-                val bitmap = Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888)
-                bitmap.copyPixelsFromBuffer(cleanBuffer)
-                bitmap
+                targetWidth
+            }
+
+            val fullBitmap = Bitmap.createBitmap(
+                bitmapWidth,
+                targetHeight,
+                Bitmap.Config.ARGB_8888
+            )
+            buffer.rewind()
+            fullBitmap.copyPixelsFromBuffer(buffer)
+
+            if (bitmapWidth == targetWidth) {
+                fullBitmap
+            } else {
+                val cropped = Bitmap.createBitmap(fullBitmap, 0, 0, targetWidth, targetHeight)
+                fullBitmap.recycle()
+                cropped
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to convert hardware Image to Bitmap", e)
             null
+        }
+    }
+
+    /**
+     * Marks the timestamp when selection ended and overlays were hidden,
+     * ensuring frames captured after this point are treated as fresh and clean.
+     */
+    fun prepareForCapture(timestamp: Long = System.currentTimeMillis()) {
+        synchronized(sessionLock) {
+            captureRequestedTimestamp = timestamp
         }
     }
 
@@ -219,8 +223,7 @@ object ScreenCaptureHelper {
      */
     fun invalidateFrame() {
         synchronized(sessionLock) {
-            reusableBitmap?.recycle()
-            reusableBitmap = null
+            captureRequestedTimestamp = System.currentTimeMillis()
             pendingContinuation?.let {
                 if (it.isActive) it.resume(null)
             }
@@ -232,9 +235,10 @@ object ScreenCaptureHelper {
         context: Context,
         mediaProjection: MediaProjection,
         selectionPath: Path?,
-        boundingBox: RectF
+        boundingBox: RectF,
+        minTimestamp: Long = 0L
     ): Bitmap? = withContext(Dispatchers.Default) {
-        val fullScreenBitmap = captureFullScreen(context, mediaProjection) ?: return@withContext null
+        val fullScreenBitmap = captureFullScreen(context, mediaProjection, minTimestamp) ?: return@withContext null
 
         try {
             val bmpWidth = fullScreenBitmap.width
@@ -289,22 +293,62 @@ object ScreenCaptureHelper {
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error cropping screenshot", e)
-            fullScreenBitmap.recycle()
+            try { fullScreenBitmap.recycle() } catch (_: Exception) {}
             null
         }
     }
 
     private suspend fun captureFullScreen(
         context: Context,
-        mediaProjection: MediaProjection
+        mediaProjection: MediaProjection,
+        minTimestamp: Long = 0L
     ): Bitmap? = withContext(Dispatchers.Default) {
         val success = ensureSession(context, mediaProjection)
-        if (!success) return@withContext null
+        if (!success) {
+            Log.e(TAG, "ensureSession returned false")
+            return@withContext null
+        }
 
-        // Wait up to 3 seconds for the new frame rendered after overlays were hidden
-        return@withContext withTimeoutOrNull(3000L) {
+        // 1. Check if an image is immediately available in ImageReader
+        try {
+            val directImage = imageReader?.acquireLatestImage()
+            if (directImage != null) {
+                try {
+                    val directBitmap = convertImageToBitmap(directImage, currentWidth, currentHeight)
+                    if (directBitmap != null) {
+                        synchronized(sessionLock) {
+                            latestBitmap?.recycle()
+                            latestBitmap = directBitmap
+                            latestBitmapTimestamp = System.currentTimeMillis()
+                        }
+                        return@withContext directBitmap.copy(Bitmap.Config.ARGB_8888, true)
+                    }
+                } finally {
+                    try { directImage.close() } catch (_: Exception) {}
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Direct acquireLatestImage failed: ${e.message}")
+        }
+
+        // 2. Check if a frame already arrived after the minTimestamp (overlay hidden time)
+        val threshold = if (minTimestamp > 0L) minTimestamp else captureRequestedTimestamp
+        synchronized(sessionLock) {
+            val bmp = latestBitmap
+            if (bmp != null && !bmp.isRecycled && (threshold <= 0L || latestBitmapTimestamp >= threshold)) {
+                return@withContext bmp.copy(Bitmap.Config.ARGB_8888, true)
+            }
+        }
+
+        // 3. Otherwise wait up to 1500ms for the next frame
+        val frame = withTimeoutOrNull(1500L) {
             suspendCancellableCoroutine { continuation ->
                 synchronized(sessionLock) {
+                    val bmp = latestBitmap
+                    if (bmp != null && !bmp.isRecycled && (threshold <= 0L || latestBitmapTimestamp >= threshold)) {
+                        continuation.resume(bmp.copy(Bitmap.Config.ARGB_8888, true))
+                        return@suspendCancellableCoroutine
+                    }
                     pendingContinuation = continuation
                 }
                 continuation.invokeOnCancellation {
@@ -316,6 +360,23 @@ object ScreenCaptureHelper {
                 }
             }
         }
+
+        if (frame != null) {
+            return@withContext frame
+        }
+
+        // 4. Reliable Fallback: Screen was static, so VirtualDisplay produced no new frames.
+        // Use available latestBitmap fallback so the capture NEVER fails!
+        synchronized(sessionLock) {
+            val fallback = latestBitmap
+            if (fallback != null && !fallback.isRecycled) {
+                Log.d(TAG, "Screen was static. Using available latestBitmap fallback.")
+                return@withContext fallback.copy(Bitmap.Config.ARGB_8888, true)
+            }
+        }
+
+        Log.e(TAG, "No screen frame available for capture")
+        null
     }
 
     fun release() {
@@ -346,8 +407,8 @@ object ScreenCaptureHelper {
         handlerThread = null
         handler = null
 
-        reusableBitmap?.recycle()
-        reusableBitmap = null
+        latestBitmap?.recycle()
+        latestBitmap = null
 
         pendingContinuation?.let {
             if (it.isActive) it.resume(null)
