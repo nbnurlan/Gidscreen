@@ -22,8 +22,10 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Create local.properties with Gemini Key
-        run: echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > local.properties
+      - name: Create .env and local.properties with Gemini Key
+        run: |
+          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > .env
+          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > local.properties
 
       - name: Generate debug keystore
         run: |
