@@ -92,6 +92,8 @@ import com.example.service.LassoOverlayService
 import com.example.service.MediaProjectionHolder
 import com.example.ui.CompactLanguageDropdown
 import com.example.ui.FloatingChatDialogContent
+import com.example.ui.GeminiApiStatusCard
+import com.example.ui.GeminiModelSelectionSheet
 import com.example.ui.LassoSelectionContent
 import com.example.ui.MasterServiceCard
 import com.example.ui.PermissionStatusItem
@@ -188,6 +190,9 @@ fun MainAppScreen(
 
     // Navigation state: Settings screen opened via gear icon at the top
     var showSettingsScreen by remember { mutableStateOf(false) }
+
+    // BottomSheet state for selecting Gemini Model dynamically
+    var showModelBottomSheet by remember { mutableStateOf(false) }
 
     val overlayRequiredMsg = stringResource(R.string.toast_overlay_required)
     val serviceStartedMsg = stringResource(R.string.toast_service_started)
@@ -343,6 +348,9 @@ fun MainAppScreen(
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                                 notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                             }
+                        },
+                        onOpenModelSelection = {
+                            showModelBottomSheet = true
                         }
                     )
                 } else {
@@ -381,6 +389,15 @@ fun MainAppScreen(
                                 }
                             )
                         }
+
+                        // Gemini AI Model & API Status Card
+                        item {
+                            GeminiApiStatusCard(
+                                onOpenModelSelection = {
+                                    showModelBottomSheet = true
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -401,6 +418,14 @@ fun MainAppScreen(
                     inAppThumbnail = testBitmap
                     inAppAnalysisState = AnalysisState.Analyzing(testBitmap)
                     inAppChatMessages.clear()
+                    inAppChatMessages.add(
+                        ChatMessage(
+                            sender = MessageSender.USER,
+                            text = GeminiService.getDefaultAnalysisPrompt(),
+                            image = testBitmap,
+                            isVisible = false
+                        )
+                    )
                     showInAppChatDialog = true
 
                     coroutineScope.launch {
@@ -490,6 +515,13 @@ fun MainAppScreen(
                         .height(windowHeight)
                 )
             }
+        }
+
+        // Gemini Model Selection BottomSheet (as requested by user)
+        if (showModelBottomSheet) {
+            GeminiModelSelectionSheet(
+                onDismissRequest = { showModelBottomSheet = false }
+            )
         }
     }
 }

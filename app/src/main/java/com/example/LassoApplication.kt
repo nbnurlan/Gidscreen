@@ -16,6 +16,7 @@ class LassoApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         LocaleHelper.init(this)
+        com.example.network.GeminiModelManager.init(this)
         createNotificationChannel()
     }
 

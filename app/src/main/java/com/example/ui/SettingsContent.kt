@@ -31,15 +31,21 @@ import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Swipe
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -54,6 +60,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
+import com.example.network.GeminiModelManager
 import com.example.network.GeminiService
 import com.example.ui.theme.CyanGlow
 import com.example.ui.theme.DarkBorder
@@ -70,10 +77,110 @@ fun SettingsContent(
     hasNotificationPermission: Boolean = false,
     onOpenOverlayPermission: () -> Unit = {},
     onOpenCapturePermission: () -> Unit = {},
-    onOpenNotificationPermission: () -> Unit = {}
+    onOpenNotificationPermission: () -> Unit = {},
+    onOpenModelSelection: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val currentLang by LocaleHelper.currentLanguage.collectAsState()
+    var showLanguageDialog by remember { mutableStateOf(false) }
+
+    if (showLanguageDialog) {
+        AlertDialog(
+            onDismissRequest = { showLanguageDialog = false },
+            containerColor = DarkSurface,
+            titleContentColor = Color.White,
+            textContentColor = Color.White.copy(alpha = 0.85f),
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.Language,
+                    contentDescription = null,
+                    tint = CyanGlow,
+                    modifier = Modifier.size(28.dp)
+                )
+            },
+            title = {
+                Text(
+                    text = stringResource(R.string.dialog_select_language_title),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    LocaleHelper.supportedLanguages.forEach { lang ->
+                        val isSelected = currentLang == lang.code
+                        Surface(
+                            color = if (isSelected) CyanGlow.copy(alpha = 0.15f) else Color(0xFF0F172A),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(
+                                width = if (isSelected) 1.5.dp else 1.dp,
+                                color = if (isSelected) CyanGlow else DarkBorder
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable {
+                                    LocaleHelper.setLanguage(context, lang.code)
+                                    val msg = context.getString(R.string.toast_language_changed, lang.nativeName)
+                                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                    showLanguageDialog = false
+                                }
+                                .testTag("dialog_lang_option_${lang.code}")
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Text(text = lang.flag, fontSize = 22.sp)
+                                    Text(
+                                        text = lang.nativeName,
+                                        color = if (isSelected) CyanGlow else Color.White,
+                                        fontSize = 15.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                    )
+                                }
+                                RadioButton(
+                                    selected = isSelected,
+                                    onClick = {
+                                        LocaleHelper.setLanguage(context, lang.code)
+                                        val msg = context.getString(R.string.toast_language_changed, lang.nativeName)
+                                        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                        showLanguageDialog = false
+                                    },
+                                    colors = RadioButtonDefaults.colors(
+                                        selectedColor = CyanGlow,
+                                        unselectedColor = Color.White.copy(alpha = 0.5f)
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(
+                    onClick = { showLanguageDialog = false },
+                    modifier = Modifier.testTag("dialog_lang_cancel_btn")
+                ) {
+                    Text(
+                        text = stringResource(R.string.btn_cancel),
+                        color = CyanGlow
+                    )
+                }
+            }
+        )
+    }
 
     LazyColumn(
         modifier = modifier
@@ -103,54 +210,28 @@ fun SettingsContent(
         }
 
         // -------------------------------------------------------------
-        // 1. Language Settings Card ("Tilni o'zgartirish")
+        // 1. Language Settings Row ("Tillar")
         // -------------------------------------------------------------
         item {
             LanguageSettingsCard(
                 currentLanguage = currentLang,
-                onLanguageSelected = { lang ->
-                    LocaleHelper.setLanguage(context, lang.code)
-                    val msg = context.getString(R.string.toast_language_changed, lang.nativeName)
-                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                }
+                onClick = { showLanguageDialog = true }
             )
         }
 
         // -------------------------------------------------------------
-        // 2. Permissions & System Access ("Tizim ruxsatlari va sozlamalar")
+        // 2. Notification Permission (Android 13+)
         // -------------------------------------------------------------
-        item {
-            Text(
-                text = stringResource(R.string.section_permissions_title),
-                color = Color.White,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
-            )
-        }
-
-        // Overlay Permission Item
-        item {
-            PermissionStatusItem(
-                title = stringResource(R.string.perm_overlay_title),
-                subtitle = stringResource(R.string.perm_overlay_desc),
-                isGranted = hasOverlayPermission,
-                onGrant = onOpenOverlayPermission
-            )
-        }
-
-        // Screen Capture (MediaProjection API) Item
-        item {
-            PermissionStatusItem(
-                title = stringResource(R.string.perm_capture_title),
-                subtitle = stringResource(R.string.perm_capture_desc),
-                isGranted = hasCaptureToken,
-                onGrant = onOpenCapturePermission
-            )
-        }
-
-        // Notification Permission Item (Android 13+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            item {
+                Text(
+                    text = stringResource(R.string.section_permissions_title),
+                    color = Color.White,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
+                )
+            }
             item {
                 PermissionStatusItem(
                     title = stringResource(R.string.perm_notification_title),
@@ -165,7 +246,7 @@ fun SettingsContent(
         // 3. Gemini AI Model Configuration
         // -------------------------------------------------------------
         item {
-            AiModelSettingsCard()
+            AiModelSettingsCard(onOpenModelSelection = onOpenModelSelection)
         }
 
         // -------------------------------------------------------------
@@ -187,8 +268,11 @@ fun SettingsContent(
 @Composable
 fun LanguageSettingsCard(
     currentLanguage: String,
-    onLanguageSelected: (AppLanguage) -> Unit
+    onClick: () -> Unit
 ) {
+    val currentLangObj = LocaleHelper.supportedLanguages.find { it.code == currentLanguage }
+        ?: LocaleHelper.supportedLanguages.first()
+
     Card(
         colors = CardDefaults.cardColors(containerColor = DarkSurface),
         shape = RoundedCornerShape(16.dp),
@@ -196,16 +280,24 @@ fun LanguageSettingsCard(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(6.dp, RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(16.dp))
+            .clickable { onClick() }
             .testTag("settings_language_card")
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Box(
                     modifier = Modifier
-                        .size(38.dp)
+                        .size(40.dp)
                         .clip(CircleShape)
                         .background(CyanGlow.copy(alpha = 0.15f)),
                     contentAlignment = Alignment.Center
@@ -214,7 +306,7 @@ fun LanguageSettingsCard(
                         imageVector = Icons.Default.Language,
                         contentDescription = null,
                         tint = CyanGlow,
-                        modifier = Modifier.size(22.dp)
+                        modifier = Modifier.size(24.dp)
                     )
                 }
                 Column {
@@ -232,52 +324,23 @@ fun LanguageSettingsCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // 3 Selectable Language Pills
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            Surface(
+                color = CyanGlow.copy(alpha = 0.12f),
+                shape = RoundedCornerShape(20.dp),
+                border = BorderStroke(1.dp, CyanGlow.copy(alpha = 0.4f))
             ) {
-                LocaleHelper.supportedLanguages.forEach { lang ->
-                    val isSelected = currentLanguage == lang.code
-                    Surface(
-                        color = if (isSelected) CyanGlow.copy(alpha = 0.18f) else Color(0xFF0F172A),
-                        shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(
-                            width = if (isSelected) 1.5.dp else 1.dp,
-                            color = if (isSelected) CyanGlow else DarkBorder
-                        ),
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { onLanguageSelected(lang) }
-                            .testTag("lang_setting_btn_${lang.code}")
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(vertical = 12.dp, horizontal = 6.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Text(text = lang.flag, fontSize = 22.sp)
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = lang.nativeName,
-                                color = if (isSelected) CyanGlow else Color.White,
-                                fontSize = 12.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                            )
-                            if (isSelected) {
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = null,
-                                    tint = CyanGlow,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
-                        }
-                    }
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(text = currentLangObj.flag, fontSize = 14.sp)
+                    Text(
+                        text = currentLangObj.nativeName,
+                        color = CyanGlow,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
         }
@@ -285,8 +348,12 @@ fun LanguageSettingsCard(
 }
 
 @Composable
-private fun AiModelSettingsCard() {
+private fun AiModelSettingsCard(
+    onOpenModelSelection: () -> Unit = {}
+) {
     val isConfigured = GeminiService.isApiKeyConfigured()
+    val activeModelId by GeminiModelManager.selectedModelId.collectAsState()
+    val currentModel = GeminiModelManager.getSelectedModel()
 
     Card(
         colors = CardDefaults.cardColors(containerColor = DarkSurface),
@@ -295,6 +362,8 @@ private fun AiModelSettingsCard() {
         modifier = Modifier
             .fillMaxWidth()
             .shadow(4.dp, RoundedCornerShape(16.dp))
+            .clickable(onClick = onOpenModelSelection)
+            .testTag("ai_model_settings_card")
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -341,12 +410,12 @@ private fun AiModelSettingsCard() {
                     border = BorderStroke(1.dp, PurpleNeon.copy(alpha = 0.3f))
                 ) {
                     Text(
-                        text = stringResource(R.string.gemini_model_name),
+                        text = currentModel.displayName,
                         color = PurpleNeon,
-                        fontSize = 11.sp,
+                        fontSize = 12.sp,
                         fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                     )
                 }
             }
@@ -354,11 +423,33 @@ private fun AiModelSettingsCard() {
             Spacer(modifier = Modifier.height(10.dp))
 
             Text(
-                text = stringResource(R.string.settings_model_desc),
-                color = Color.White.copy(alpha = 0.6f),
-                fontSize = 11.sp,
-                lineHeight = 16.sp
+                text = currentModel.description.ifBlank { stringResource(R.string.settings_model_desc) },
+                color = Color.White.copy(alpha = 0.7f),
+                fontSize = 12.sp,
+                lineHeight = 17.sp
             )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                Surface(
+                    color = Color(0xFF1E293B),
+                    shape = RoundedCornerShape(8.dp),
+                    border = BorderStroke(1.dp, CyanGlow.copy(alpha = 0.3f)),
+                    modifier = Modifier.clickable(onClick = onOpenModelSelection)
+                ) {
+                    Text(
+                        text = stringResource(R.string.btn_change_model),
+                        color = CyanGlow,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
+                }
+            }
         }
     }
 }

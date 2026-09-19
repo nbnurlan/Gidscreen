@@ -29,8 +29,9 @@
     <string name="btn_stop_service">Stop Service</string>
 
     <!-- Language Selector -->
-    <string name="language_settings_title">Interface Language</string>
-    <string name="language_settings_desc">Choose the display language for the app and floating overlay</string>
+    <string name="language_settings_title">Languages</string>
+    <string name="language_settings_desc">Language settings in Gemini</string>
+    <string name="dialog_select_language_title">Select Language</string>
     <string name="language_english">English</string>
     <string name="language_uzbek">O\'zbekcha</string>
     <string name="language_russian">Русский</string>
@@ -147,4 +148,20 @@
     <string name="error_general_gemini">Failed to analyze screen selection with Gemini AI.</string>
     <string name="error_api_key_leaked">Your Gemini API key was reported as leaked and revoked by Google. Please enter a new GEMINI_API_KEY in the AI Studio Secrets panel.</string>
     <string name="error_api_key_invalid">Invalid or missing Gemini API key. Please check GEMINI_API_KEY in the AI Studio Secrets panel.</string>
+
+    <!-- Gemini Model Selection BottomSheet -->
+    <string name="model_sheet_title">Select Gemini Model</string>
+    <string name="model_sheet_refresh">Refresh from Gemini API</string>
+    <string name="model_sheet_refreshing">Updating models list...</string>
+    <string name="model_sheet_updated">Models updated from Gemini API</string>
+    <string name="model_sheet_select_btn">Select</string>
+    <string name="btn_change_model">Change Model</string>
+
+    <!-- Image Zoom & Loading strings -->
+    <string name="image_zoom_title">Captured Image Detail</string>
+    <string name="image_zoom_hint">Pinch to zoom in/out • Drag to pan</string>
+    <string name="btn_reset_zoom">Reset Zoom</string>
+    <string name="btn_zoom">Zoom</string>
+    <string name="input_placeholder_waiting">Gemini is responding…</string>
+    <string name="ai_responding_indicator">AI is thinking...</string>
 </resources>

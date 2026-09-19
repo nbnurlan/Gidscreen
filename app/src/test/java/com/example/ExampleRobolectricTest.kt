@@ -7,6 +7,7 @@ import com.example.model.ChatMessage
 import com.example.model.MessageSender
 import com.example.model.SelectionMode
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -88,6 +89,14 @@ class ExampleRobolectricTest {
         assertEquals(MessageSender.AI, msg.sender)
         assertEquals("Explanation from gemini-3.6-flash", msg.text)
         assertNotNull(msg.id)
+        assertTrue(msg.isVisible)
+
+        val hiddenMsg = ChatMessage(
+            sender = MessageSender.USER,
+            text = "Belgilangan ekran qismini batafsil tahlil qiling...",
+            isVisible = false
+        )
+        assertFalse(hiddenMsg.isVisible)
     }
 
     @Test
@@ -105,17 +114,17 @@ class ExampleRobolectricTest {
 
         RuntimeEnvironment.setQualifiers("uz")
         assertEquals("Sozlamalar", baseContext.getString(R.string.tab_settings))
-        assertEquals("Interfeys tili", baseContext.getString(R.string.language_settings_title))
+        assertEquals("Tillar", baseContext.getString(R.string.language_settings_title))
         assertEquals("Orqaga", baseContext.getString(R.string.btn_back))
 
         RuntimeEnvironment.setQualifiers("ru")
         assertEquals("Настройки", baseContext.getString(R.string.tab_settings))
-        assertEquals("Язык интерфейса", baseContext.getString(R.string.language_settings_title))
+        assertEquals("Языки", baseContext.getString(R.string.language_settings_title))
         assertEquals("Назад", baseContext.getString(R.string.btn_back))
 
         RuntimeEnvironment.setQualifiers("en")
         assertEquals("Settings", baseContext.getString(R.string.tab_settings))
-        assertEquals("Interface Language", baseContext.getString(R.string.language_settings_title))
+        assertEquals("Languages", baseContext.getString(R.string.language_settings_title))
         assertEquals("Back", baseContext.getString(R.string.btn_back))
     }
 }

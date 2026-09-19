@@ -29,8 +29,9 @@
     <string name="btn_stop_service">Xizmatni to\'xtatish</string>
 
     <!-- Language Selector -->
-    <string name="language_settings_title">Interfeys tili</string>
-    <string name="language_settings_desc">Ilova va suzuvchi oyna uchun interfeys tilini tanlang</string>
+    <string name="language_settings_title">Tillar</string>
+    <string name="language_settings_desc">Gemini-da til sozlamalari</string>
+    <string name="dialog_select_language_title">Tilni tanlang</string>
     <string name="language_english">English</string>
     <string name="language_uzbek">O\'zbekcha</string>
     <string name="language_russian">Русский</string>
@@ -147,4 +148,18 @@
     <string name="error_general_gemini">Gemini AI orqali ekran qismini tahlil qilishda xatolik yuz berdi.</string>
     <string name="error_api_key_leaked">Gemini API kaliti sizib chiqqanligi sababli Google tomonidan bekor qilingan. Iltimos, AI Studio Secrets paneliga yangi GEMINI_API_KEY kiriting.</string>
     <string name="error_api_key_invalid">Gemini API kaliti yaroqsiz yoki kiritilmagan. Iltimos, AI Studio Secrets panelini tekshiring.</string>
+
+    <!-- Gemini Model Selection BottomSheet -->
+    <string name="model_sheet_title">Gemini modelini tanlash</string>
+    <string name="model_sheet_refresh">Gemini API orqali yangilash</string>
+    <string name="model_sheet_refreshing">Modellar ro\'yxati yangilanmoqda...</string>
+    <string name="model_sheet_updated">Modellar Gemini API orqali yangilandi</string>
+    <string name="model_sheet_select_btn">Tanlash</string>
+    <string name="btn_change_model">Modelni almashtirish</string>
+
+    <!-- Image Zoom & Loading strings -->
+    <string name="image_zoom_title">Olingan rasm tafsiloti</string>
+    <string name="image_zoom_hint">Kattalashtirish uchun chimdilang • Surish uchun torting</string>
+    <string name="btn_reset_zoom">Dastlabki holat</string>
+    <string name="ai_responding_indicator">AI javob tayyorlamoqda...</string>
 </resources>

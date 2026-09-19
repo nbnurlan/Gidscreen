@@ -36,7 +36,6 @@ import com.example.model.MessageSender
 import com.example.network.ApiKeyInvalidException
 import com.example.network.ApiKeyLeakedException
 import com.example.network.GeminiService
-import com.example.ui.DockSide
 import com.example.ui.FloatingBubbleContent
 import com.example.ui.FloatingChatDialogContent
 import com.example.ui.LassoSelectionContent
@@ -70,8 +69,6 @@ class LassoOverlayService : Service() {
     // Overlay Views
     private var bubbleView: ComposeView? = null
     private var bubbleParams: WindowManager.LayoutParams? = null
-    private val isBubbleTuckedState = mutableStateOf(false)
-    private val bubbleDockSideState = mutableStateOf(DockSide.LEFT)
 
     private var selectionView: ComposeView? = null
     private var selectionParams: WindowManager.LayoutParams? = null
@@ -170,7 +167,7 @@ class LassoOverlayService : Service() {
     }
 
     // -------------------------------------------------------------
-    // Feature 1: Floating Action Button (Movable Anywhere & Edge-Tuckable)
+    // Feature 1: Floating Action Button (Free Drag & Drop Anywhere & Single Tap)
     // -------------------------------------------------------------
     @SuppressLint("ClickableViewAccessibility")
     private fun showFloatingBubble() {
@@ -189,7 +186,7 @@ class LassoOverlayService : Service() {
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
-            x = 24
+            x = 36
             y = screenHeight / 3
         }
         bubbleParams = params
@@ -199,34 +196,21 @@ class LassoOverlayService : Service() {
             bubbleLifecycleOwner.attachToView(this)
             setContent {
                 MyApplicationTheme {
-                    val isTucked by isBubbleTuckedState
-                    val dockSide by bubbleDockSideState
-                    FloatingBubbleContent(
-                        isTucked = isTucked,
-                        dockSide = dockSide,
-                        onClick = {
-                            showSelectionOverlay()
-                        },
-                        onTuckClick = {
-                            tuckBubbleToEdge()
-                        },
-                        onUntuckClick = {
-                            untuckBubbleFromEdge()
-                        }
-                    )
+                    FloatingBubbleContent()
                 }
             }
         }
 
-        // Touch & Drag listener for free placement anywhere on screen & edge docking
+        // Touch & Drag listener: siljitishda tugma harakatlanadi, bir marta bosganda tanlash oynasi ochiladi
         var initialX = 0
         var initialY = 0
         var initialTouchX = 0f
         var initialTouchY = 0f
         var isDragging = false
         val touchSlop = ViewConfiguration.get(this).scaledTouchSlop
+        var touchStartTime = 0L
 
-        view.setOnTouchListener { _, event ->
+        view.setOnTouchListener { v, event ->
             val currentParams = bubbleParams ?: return@setOnTouchListener false
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
@@ -234,35 +218,28 @@ class LassoOverlayService : Service() {
                     initialY = currentParams.y
                     initialTouchX = event.rawX
                     initialTouchY = event.rawY
+                    touchStartTime = System.currentTimeMillis()
                     isDragging = false
                     true
                 }
                 MotionEvent.ACTION_MOVE -> {
                     val dx = (event.rawX - initialTouchX).toInt()
                     val dy = (event.rawY - initialTouchY).toInt()
-                    val distance = kotlin.math.hypot(dx.toDouble(), dy.toDouble())
 
-                    if (!isDragging && distance > touchSlop) {
+                    if (!isDragging && (kotlin.math.abs(dx) > touchSlop || kotlin.math.abs(dy) > touchSlop)) {
                         isDragging = true
-                        // When user pulls the edge tab or drags bubble, untuck so it floats with finger
-                        if (isBubbleTuckedState.value) {
-                            isBubbleTuckedState.value = false
-                        }
                     }
 
                     if (isDragging) {
                         val dm = resources.displayMetrics
-                        val maxCoordX = (dm.widthPixels - 60).coerceAtLeast(0)
-                        val maxCoordY = (dm.heightPixels - 120).coerceAtLeast(0)
+                        val viewW = if (view.width > 0) view.width else 160
+                        val viewH = if (view.height > 0) view.height else 160
+                        val maxX = (dm.widthPixels - viewW).coerceAtLeast(0)
+                        val maxY = (dm.heightPixels - viewH).coerceAtLeast(0)
 
-                        currentParams.x = (initialX + dx).coerceIn(0, maxCoordX)
-                        currentParams.y = (initialY + dy).coerceIn(40, maxCoordY)
-
-                        bubbleDockSideState.value = if (currentParams.x < dm.widthPixels / 2) {
-                            DockSide.LEFT
-                        } else {
-                            DockSide.RIGHT
-                        }
+                        // Barmoq harakati bilan birga siljiydi
+                        currentParams.x = (initialX + dx).coerceIn(0, maxX)
+                        currentParams.y = (initialY + dy).coerceIn(0, maxY)
 
                         try {
                             windowManager.updateViewLayout(view, currentParams)
@@ -273,28 +250,24 @@ class LassoOverlayService : Service() {
                     true
                 }
                 MotionEvent.ACTION_UP -> {
-                    if (!isDragging) {
-                        // Clean tap without drag: launch screen selection overlay
+                    val duration = System.currentTimeMillis() - touchStartTime
+                    val dx = kotlin.math.abs((event.rawX - initialTouchX).toInt())
+                    val dy = kotlin.math.abs((event.rawY - initialTouchY).toInt())
+
+                    if (!isDragging && dx <= touchSlop && dy <= touchSlop && duration < 400) {
+                        // Bir marta oddiy bosilganda (click) avvalgi amali (ekranni belgilash) chaqiriladi
+                        v.performClick()
                         showSelectionOverlay()
                     } else {
-                        // Drag completed: check if placed near screen edge to tuck
+                        // Siljitish tugagach qo'yilgan joyda saqlanadi
                         val dm = resources.displayMetrics
-                        val edgeThreshold = 130
-                        val isNearLeft = currentParams.x < edgeThreshold
-                        val isNearRight = currentParams.x > (dm.widthPixels - edgeThreshold - 80)
+                        val viewW = if (view.width > 0) view.width else 160
+                        val viewH = if (view.height > 0) view.height else 160
+                        val maxX = (dm.widthPixels - viewW).coerceAtLeast(0)
+                        val maxY = (dm.heightPixels - viewH).coerceAtLeast(0)
 
-                        if (isNearLeft) {
-                            bubbleDockSideState.value = DockSide.LEFT
-                            isBubbleTuckedState.value = true
-                            currentParams.x = 0
-                        } else if (isNearRight) {
-                            bubbleDockSideState.value = DockSide.RIGHT
-                            isBubbleTuckedState.value = true
-                            currentParams.x = dm.widthPixels - 48
-                        } else {
-                            // Freely positioned anywhere on screen
-                            isBubbleTuckedState.value = false
-                        }
+                        currentParams.x = currentParams.x.coerceIn(0, maxX)
+                        currentParams.y = currentParams.y.coerceIn(0, maxY)
 
                         try {
                             windowManager.updateViewLayout(view, currentParams)
@@ -312,34 +285,6 @@ class LassoOverlayService : Service() {
         try {
             windowManager.addView(view, params)
             bubbleView = view
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    private fun tuckBubbleToEdge() {
-        val currentParams = bubbleParams ?: return
-        val currentView = bubbleView ?: return
-        val dm = resources.displayMetrics
-        val side = if (currentParams.x < dm.widthPixels / 2) DockSide.LEFT else DockSide.RIGHT
-        bubbleDockSideState.value = side
-        isBubbleTuckedState.value = true
-        currentParams.x = if (side == DockSide.LEFT) 0 else (dm.widthPixels - 48)
-        try {
-            windowManager.updateViewLayout(currentView, currentParams)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    private fun untuckBubbleFromEdge() {
-        val currentParams = bubbleParams ?: return
-        val currentView = bubbleView ?: return
-        val dm = resources.displayMetrics
-        isBubbleTuckedState.value = false
-        currentParams.x = if (bubbleDockSideState.value == DockSide.LEFT) 36 else (dm.widthPixels - 180)
-        try {
-            windowManager.updateViewLayout(currentView, currentParams)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -537,7 +482,8 @@ class LassoOverlayService : Service() {
             val userMsg = ChatMessage(
                 sender = MessageSender.USER,
                 text = userCapturePrompt,
-                image = croppedBitmap
+                image = croppedBitmap,
+                isVisible = false // Hidden from chat UI: sent in background to Gemini
             )
             chatMessages.add(userMsg)
 

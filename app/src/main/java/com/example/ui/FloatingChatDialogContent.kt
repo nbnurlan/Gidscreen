@@ -52,6 +52,8 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.ZoomIn
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -88,6 +90,7 @@ import com.example.R
 import com.example.model.AnalysisState
 import com.example.model.ChatMessage
 import com.example.model.MessageSender
+import com.example.network.GeminiModelManager
 import com.example.ui.theme.CyanGlow
 import com.example.ui.theme.DarkBorder
 import com.example.ui.theme.DarkSurface
@@ -113,12 +116,18 @@ fun FloatingChatDialogContent(
 
     var isMinimized by remember { mutableStateOf(false) }
     var followUpInput by remember { mutableStateOf("") }
+    var previewBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    val isAnalyzing = analysisState is AnalysisState.Analyzing
     val listState = rememberLazyListState()
 
+    val visibleMessages = remember(chatMessages.size, chatMessages.count { it.isVisible }) {
+        chatMessages.filter { isVisibleChatMessage(it) }
+    }
+
     // Auto scroll on new message
-    LaunchedEffect(chatMessages.size, analysisState) {
-        if (chatMessages.isNotEmpty()) {
-            listState.animateScrollToItem(chatMessages.size - 1)
+    LaunchedEffect(visibleMessages.size, analysisState) {
+        if (visibleMessages.isNotEmpty()) {
+            listState.animateScrollToItem(visibleMessages.size)
         }
     }
 
@@ -260,12 +269,7 @@ fun FloatingChatDialogContent(
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold
                     )
-                    Text(
-                        text = stringResource(R.string.gemini_model_name),
-                        color = CyanGlow.copy(alpha = 0.8f),
-                        fontSize = 10.sp,
-                        fontFamily = FontFamily.Monospace
-                    )
+                    CompactModelSelector()
                 }
 
                 // In-Overlay Compact Flag Language Selector Dropdown
@@ -274,15 +278,16 @@ fun FloatingChatDialogContent(
                 Spacer(modifier = Modifier.width(2.dp))
 
                 // Clear Chat Session Button (if messages exist)
-                if (chatMessages.isNotEmpty() && onClearChat != null) {
+                if (visibleMessages.isNotEmpty() && onClearChat != null) {
                     IconButton(
                         onClick = onClearChat,
+                        enabled = !isAnalyzing,
                         modifier = Modifier.size(30.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.DeleteOutline,
                             contentDescription = stringResource(R.string.btn_clear_chat),
-                            tint = Color.White.copy(alpha = 0.65f),
+                            tint = if (!isAnalyzing) Color.White.copy(alpha = 0.65f) else Color.White.copy(alpha = 0.25f),
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -291,12 +296,13 @@ fun FloatingChatDialogContent(
                 // New Selection Action
                 IconButton(
                     onClick = onNewSelectionRequested,
+                    enabled = !isAnalyzing,
                     modifier = Modifier.size(30.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.CropFree,
                         contentDescription = stringResource(R.string.btn_new_selection),
-                        tint = CyanGlow,
+                        tint = if (!isAnalyzing) CyanGlow else CyanGlow.copy(alpha = 0.3f),
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -350,9 +356,12 @@ fun FloatingChatDialogContent(
                         else -> null
                     }
 
-                    if (thumb != null && chatMessages.none { it.image != null }) {
+                    if (thumb != null && visibleMessages.none { it.image != null }) {
                         item {
-                            ScreenThumbnailCard(bitmap = thumb)
+                            ScreenThumbnailCard(
+                                bitmap = thumb,
+                                onImageClick = { previewBitmap = thumb }
+                            )
                         }
                     }
 
@@ -374,7 +383,7 @@ fun FloatingChatDialogContent(
                     }
 
                     // Chat messages (Initial AI answer + multi-turn history)
-                    items(chatMessages) { message ->
+                    items(visibleMessages, key = { it.id }) { message ->
                         val copiedToastText = stringResource(R.string.toast_copied)
                         ChatBubbleItem(
                             message = message,
@@ -383,16 +392,22 @@ fun FloatingChatDialogContent(
                                 val clip = ClipData.newPlainText("AI Insight", message.text)
                                 clipboard.setPrimaryClip(clip)
                                 Toast.makeText(context, copiedToastText, Toast.LENGTH_SHORT).show()
+                            },
+                            onImageClick = { img ->
+                                previewBitmap = img
                             }
                         )
                     }
 
-                    // Quick suggestion prompts if initial analysis succeeded and conversation is short
-                    if (analysisState is AnalysisState.Success && chatMessages.size <= 2) {
+                    // Quick suggestion prompts if initial analysis succeeded and conversation has no user follow-up yet
+                    if (analysisState is AnalysisState.Success && visibleMessages.count { it.sender == MessageSender.USER } == 0) {
                         item {
                             QuickPromptsRow(
+                                isEnabled = !isAnalyzing,
                                 onPromptSelected = { prompt ->
-                                    onSendFollowUp(prompt)
+                                    if (!isAnalyzing) {
+                                        onSendFollowUp(prompt)
+                                    }
                                 }
                             )
                         }
@@ -414,10 +429,11 @@ fun FloatingChatDialogContent(
                     OutlinedTextField(
                         value = followUpInput,
                         onValueChange = { followUpInput = it },
+                        enabled = !isAnalyzing,
                         placeholder = {
                             Text(
-                                text = stringResource(R.string.input_placeholder_follow_up),
-                                color = Color.White.copy(alpha = 0.4f),
+                                text = if (isAnalyzing) stringResource(R.string.input_placeholder_waiting) else stringResource(R.string.input_placeholder_follow_up),
+                                color = Color.White.copy(alpha = if (isAnalyzing) 0.25f else 0.4f),
                                 fontSize = 12.sp
                             )
                         },
@@ -426,6 +442,8 @@ fun FloatingChatDialogContent(
                             unfocusedBorderColor = DarkBorder,
                             focusedTextColor = Color.White,
                             unfocusedTextColor = Color.White,
+                            disabledTextColor = Color.White.copy(alpha = 0.4f),
+                            disabledBorderColor = DarkBorder.copy(alpha = 0.5f),
                             cursorColor = CyanGlow
                         ),
                         singleLine = true,
@@ -437,29 +455,38 @@ fun FloatingChatDialogContent(
 
                     Spacer(modifier = Modifier.width(6.dp))
 
+                    val canSend = followUpInput.isNotBlank() && !isAnalyzing
                     IconButton(
                         onClick = {
-                            if (followUpInput.isNotBlank()) {
+                            if (canSend) {
                                 val text = followUpInput.trim()
                                 followUpInput = ""
                                 onSendFollowUp(text)
                             }
                         },
-                        enabled = followUpInput.isNotBlank(),
+                        enabled = canSend,
                         modifier = Modifier
                             .size(40.dp)
                             .clip(CircleShape)
                             .background(
-                                if (followUpInput.isNotBlank()) CyanGlow else Color.White.copy(alpha = 0.1f)
+                                if (canSend) CyanGlow else Color.White.copy(alpha = 0.1f)
                             )
                             .testTag("chat_send_button")
                     ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Send,
-                            contentDescription = stringResource(R.string.btn_send),
-                            tint = if (followUpInput.isNotBlank()) Color.Black else Color.White.copy(alpha = 0.3f),
-                            modifier = Modifier.size(18.dp)
-                        )
+                        if (isAnalyzing) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp,
+                                color = CyanGlow
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.Send,
+                                contentDescription = stringResource(R.string.btn_send),
+                                tint = if (canSend) Color.Black else Color.White.copy(alpha = 0.3f),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -501,10 +528,21 @@ fun FloatingChatDialogContent(
             }
         }
     }
+
+    // Full screen Image Zoom & Pan dialog
+    previewBitmap?.let { bmp ->
+        ImageZoomDialog(
+            bitmap = bmp,
+            onDismiss = { previewBitmap = null }
+        )
+    }
 }
 
 @Composable
-private fun ScreenThumbnailCard(bitmap: Bitmap) {
+private fun ScreenThumbnailCard(
+    bitmap: Bitmap,
+    onImageClick: (() -> Unit)? = null
+) {
     Surface(
         color = Color(0xFF131B2E),
         shape = RoundedCornerShape(10.dp),
@@ -532,24 +570,70 @@ private fun ScreenThumbnailCard(bitmap: Bitmap) {
                         fontWeight = FontWeight.Medium
                     )
                 }
-                Text(
-                    text = "${bitmap.width} × ${bitmap.height} px",
-                    color = CyanGlow,
-                    fontSize = 10.sp,
-                    fontFamily = FontFamily.Monospace
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (onImageClick != null) {
+                        Text(
+                            text = stringResource(R.string.image_zoom_hint),
+                            color = CyanGlow.copy(alpha = 0.8f),
+                            fontSize = 10.sp,
+                            modifier = Modifier.padding(end = 6.dp)
+                        )
+                    }
+                    Text(
+                        text = "${bitmap.width} × ${bitmap.height} px",
+                        color = CyanGlow,
+                        fontSize = 10.sp,
+                        fontFamily = FontFamily.Monospace
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(6.dp))
-            Image(
-                bitmap = bitmap.asImageBitmap(),
-                contentDescription = stringResource(R.string.captured_screen_area),
-                contentScale = ContentScale.Fit,
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(max = 140.dp)
                     .clip(RoundedCornerShape(6.dp))
                     .background(Color.Black)
-            )
+                    .then(
+                        if (onImageClick != null) {
+                            Modifier.clickable { onImageClick() }
+                        } else Modifier
+                    )
+            ) {
+                Image(
+                    bitmap = bitmap.asImageBitmap(),
+                    contentDescription = stringResource(R.string.captured_screen_area),
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.fillMaxSize()
+                )
+                if (onImageClick != null) {
+                    Surface(
+                        color = Color.Black.copy(alpha = 0.6f),
+                        shape = RoundedCornerShape(4.dp),
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(6.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ZoomIn,
+                                contentDescription = null,
+                                tint = CyanGlow,
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text(
+                                text = stringResource(R.string.btn_zoom),
+                                color = Color.White,
+                                fontSize = 10.sp
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -565,16 +649,26 @@ private fun AnalyzingStatusCard(rotation: Float) {
         Row(
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Icon(
-                imageVector = Icons.Default.AutoAwesome,
-                contentDescription = null,
-                tint = CyanGlow,
-                modifier = Modifier
-                    .size(22.dp)
-                    .rotate(rotation)
-            )
+            Box(
+                modifier = Modifier.size(24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    strokeWidth = 2.dp,
+                    color = CyanGlow
+                )
+                Icon(
+                    imageVector = Icons.Default.AutoAwesome,
+                    contentDescription = null,
+                    tint = CyanGlow,
+                    modifier = Modifier
+                        .size(14.dp)
+                        .rotate(rotation)
+                )
+            }
             Column {
                 Text(
                     text = stringResource(R.string.analyzing_heading),
@@ -722,7 +816,8 @@ private fun ErrorCard(message: String, onRetry: () -> Unit) {
 @Composable
 private fun ChatBubbleItem(
     message: ChatMessage,
-    onCopy: () -> Unit
+    onCopy: () -> Unit,
+    onImageClick: ((Bitmap) -> Unit)? = null
 ) {
     val isUser = message.sender == MessageSender.USER
     val isAI = message.sender == MessageSender.AI
@@ -771,16 +866,25 @@ private fun ChatBubbleItem(
 
                 if (message.image != null) {
                     Spacer(modifier = Modifier.height(6.dp))
-                    Image(
-                        bitmap = message.image.asImageBitmap(),
-                        contentDescription = stringResource(R.string.captured_screen_area),
-                        contentScale = ContentScale.Fit,
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .heightIn(max = 140.dp)
                             .clip(RoundedCornerShape(8.dp))
                             .background(Color.Black)
-                    )
+                            .then(
+                                if (onImageClick != null) {
+                                    Modifier.clickable { onImageClick(message.image) }
+                                } else Modifier
+                            )
+                    ) {
+                        Image(
+                            bitmap = message.image.asImageBitmap(),
+                            contentDescription = stringResource(R.string.captured_screen_area),
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -798,7 +902,10 @@ private fun ChatBubbleItem(
 }
 
 @Composable
-private fun QuickPromptsRow(onPromptSelected: (String) -> Unit) {
+private fun QuickPromptsRow(
+    isEnabled: Boolean = true,
+    onPromptSelected: (String) -> Unit
+) {
     val prompt1 = stringResource(R.string.prompt_explain_simply)
     val prompt2 = stringResource(R.string.prompt_extract_text)
     val prompt3 = stringResource(R.string.prompt_solve_code)
@@ -812,20 +919,135 @@ private fun QuickPromptsRow(onPromptSelected: (String) -> Unit) {
         val prompts = listOf(prompt1, prompt2, prompt3)
         for (prompt in prompts) {
             Surface(
-                color = Color(0xFF1E1B4B),
+                color = if (isEnabled) Color(0xFF1E1B4B) else Color(0xFF1E1B4B).copy(alpha = 0.5f),
                 shape = RoundedCornerShape(16.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, PurpleNeon.copy(alpha = 0.5f)),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    if (isEnabled) PurpleNeon.copy(alpha = 0.5f) else PurpleNeon.copy(alpha = 0.2f)
+                ),
                 modifier = Modifier
                     .clip(RoundedCornerShape(16.dp))
-                    .clickable { onPromptSelected(prompt) }
+                    .then(
+                        if (isEnabled) {
+                            Modifier.clickable { onPromptSelected(prompt) }
+                        } else Modifier
+                    )
             ) {
                 Text(
                     text = prompt,
-                    color = Color.White,
+                    color = if (isEnabled) Color.White else Color.White.copy(alpha = 0.4f),
                     fontSize = 11.sp,
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                 )
             }
         }
     }
+}
+
+@Composable
+private fun CompactModelSelector() {
+    val context = LocalContext.current
+    var expanded by remember { mutableStateOf(false) }
+    val currentModelId by GeminiModelManager.selectedModelId.collectAsState()
+    val availableModels by GeminiModelManager.availableModels.collectAsState()
+    val activeModel = GeminiModelManager.getSelectedModel()
+
+    Box {
+        Row(
+            modifier = Modifier
+                .clip(RoundedCornerShape(4.dp))
+                .clickable { expanded = true }
+                .padding(vertical = 1.dp, horizontal = 2.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = activeModel.displayName,
+                color = CyanGlow,
+                fontSize = 10.sp,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.width(2.dp))
+            Icon(
+                imageVector = Icons.Default.ExpandMore,
+                contentDescription = null,
+                tint = CyanGlow.copy(alpha = 0.8f),
+                modifier = Modifier.size(12.dp)
+            )
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(Color(0xFF151C28))
+        ) {
+            availableModels.forEach { model ->
+                val isSelected = model.id == currentModelId || model.apiEndpointId == currentModelId
+                DropdownMenuItem(
+                    text = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.weight(1f, fill = false)) {
+                                Text(
+                                    text = model.displayName,
+                                    color = if (isSelected) CyanGlow else Color.White,
+                                    fontSize = 12.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                )
+                                Text(
+                                    text = model.description,
+                                    color = Color(0xFF94A3B8),
+                                    fontSize = 10.sp,
+                                    maxLines = 1
+                                )
+                            }
+                            if (isSelected) {
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .size(16.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFF0D6EFD)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(10.dp)
+                                    )
+                                }
+                            }
+                        }
+                    },
+                    onClick = {
+                        GeminiModelManager.setSelectedModel(context, model.id)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Filter out background/system prompts from the chat UI so they only execute silently
+ * with Gemini API and do not clutter the conversation bubbles.
+ */
+private fun isVisibleChatMessage(message: ChatMessage): Boolean {
+    if (!message.isVisible) return false
+    val text = message.text.trim()
+    if (message.sender == MessageSender.USER) {
+        if (text.startsWith("Belgilangan ekran qismini batafsil tahlil qiling") ||
+            text.startsWith("Подробно проанализируйте выделенный фрагмент") ||
+            text.startsWith("Analyze the selected screen content in detail") ||
+            text.matches(Regex("^(Capture|Фрагмент|№)\\s*#?\\d+.*tahlil qiling.*", RegexOption.IGNORE_CASE))
+        ) {
+            return false
+        }
+    }
+    return true
 }

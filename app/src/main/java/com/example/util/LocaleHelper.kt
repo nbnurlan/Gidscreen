@@ -27,8 +27,8 @@ object LocaleHelper {
 
     val supportedLanguages = listOf(
         AppLanguage(code = LANG_UZ, nameKey = "Uzbek", nativeName = "O'zbekcha", flag = "🇺🇿"),
-        AppLanguage(code = LANG_RU, nameKey = "Russian", nativeName = "Русский", flag = "🇷🇺"),
-        AppLanguage(code = LANG_EN, nameKey = "English", nativeName = "English", flag = "🇬🇧")
+        AppLanguage(code = LANG_EN, nameKey = "English", nativeName = "English", flag = "🇬🇧"),
+        AppLanguage(code = LANG_RU, nameKey = "Russian", nativeName = "Русский", flag = "🇷🇺")
     )
 
     fun getActiveLanguage(code: String): AppLanguage {

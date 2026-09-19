@@ -52,6 +52,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import com.example.network.GeminiModelManager
 import com.example.network.GeminiService
 import com.example.ui.theme.CyanGlow
 import com.example.ui.theme.DarkBorder
@@ -272,14 +275,21 @@ fun PermissionStatusItem(
 }
 
 @Composable
-fun GeminiApiStatusCard() {
+fun GeminiApiStatusCard(
+    onOpenModelSelection: () -> Unit = {}
+) {
     val isConfigured = GeminiService.isApiKeyConfigured()
+    val selectedModelId by GeminiModelManager.selectedModelId.collectAsState()
+    val activeModel = GeminiModelManager.getSelectedModel()
 
     Surface(
         color = DarkSurface,
         shape = RoundedCornerShape(12.dp),
         border = BorderStroke(1.dp, DarkBorder),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onOpenModelSelection)
+            .testTag("gemini_api_status_card")
     ) {
         Row(
             modifier = Modifier
@@ -315,13 +325,20 @@ fun GeminiApiStatusCard() {
                 }
             }
 
-            Text(
-                text = stringResource(R.string.gemini_model_name),
-                color = CyanGlow,
-                fontSize = 11.sp,
-                fontFamily = FontFamily.Monospace,
-                fontWeight = FontWeight.SemiBold
-            )
+            Surface(
+                color = CyanGlow.copy(alpha = 0.12f),
+                shape = RoundedCornerShape(8.dp),
+                border = BorderStroke(1.dp, CyanGlow.copy(alpha = 0.3f))
+            ) {
+                Text(
+                    text = activeModel.displayName,
+                    color = CyanGlow,
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+            }
         }
     }
 }

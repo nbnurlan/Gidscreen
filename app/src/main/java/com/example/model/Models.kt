@@ -14,7 +14,8 @@ data class ChatMessage(
     val sender: MessageSender,
     val text: String,
     val image: Bitmap? = null,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val isVisible: Boolean = true
 )
 
 enum class MessageSender {

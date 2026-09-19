@@ -29,8 +29,9 @@
     <string name="btn_stop_service">Остановить службу</string>
 
     <!-- Language Selector -->
-    <string name="language_settings_title">Язык интерфейса</string>
-    <string name="language_settings_desc">Выберите язык отображения приложения и плавающего оверлея</string>
+    <string name="language_settings_title">Языки</string>
+    <string name="language_settings_desc">Настройки языка в Gemini</string>
+    <string name="dialog_select_language_title">Выберите язык</string>
     <string name="language_english">English</string>
     <string name="language_uzbek">O\'zbekcha</string>
     <string name="language_russian">Русский</string>
@@ -147,4 +148,18 @@
     <string name="error_general_gemini">Ошибка при анализе фрагмента экрана через Gemini AI.</string>
     <string name="error_api_key_leaked">Ключ Gemini API отозван Google из-за утечки. Пожалуйста, укажите новый GEMINI_API_KEY в панели Secrets AI Studio.</string>
     <string name="error_api_key_invalid">Ключ Gemini API недействителен. Пожалуйста, проверьте GEMINI_API_KEY в панели Secrets AI Studio.</string>
+
+    <!-- Gemini Model Selection BottomSheet -->
+    <string name="model_sheet_title">Выбор модели Gemini</string>
+    <string name="model_sheet_refresh">Обновить через Gemini API</string>
+    <string name="model_sheet_refreshing">Обновление списка моделей...</string>
+    <string name="model_sheet_updated">Список моделей обновлен</string>
+    <string name="model_sheet_select_btn">Выбрать</string>
+    <string name="btn_change_model">Сменить модель</string>
+
+    <!-- Image Zoom & Loading strings -->
+    <string name="image_zoom_title">Детализация снимка</string>
+    <string name="image_zoom_hint">Масштабируйте жестом pinch • Перемещайте свайпом</string>
+    <string name="btn_reset_zoom">Сбросить масштаб</string>
+    <string name="ai_responding_indicator">ИИ готовит ответ...</string>
 </resources>
