@@ -20,11 +20,17 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Create .env from template if missing
+      - name: Configure Gemini API key
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          if [ ! -f .env ]; then
-            cp .env.example .env
+          if [ -z "$GEMINI_API_KEY" ]; then
+            echo "GEMINI_API_KEY secret is missing"
+            exit 1
           fi
+          cp .env.example .env
+          sed -i '/^GEMINI_API_KEY=/d' .env
+          printf '\nGEMINI_API_KEY=%s\n' "$GEMINI_API_KEY" >> .env
 
       - name: Ensure google-services.json exists
         run: |
