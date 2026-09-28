@@ -18,3 +18,13 @@ val DarkBorder = Color(0xFF334155)
 val AccentBlue = Color(0xFF38BDF8)
 val MaskDim = Color(0xB3000000)
 val NeonGradient = listOf(Color(0xFF00E5FF), Color(0xFFA855F7), Color(0xFFEC4899))
+
+// Soft light palette for the main activity. Overlay contrast remains independent.
+val SoftBackground = Color(0xFFFFFAF6)
+val SoftSurface = Color(0xFFFFFEFC)
+val SoftSurfaceVariant = Color(0xFFF3EBFC)
+val SoftBorder = Color(0xFFE8DFF0)
+val SoftPrimary = Color(0xFF7950D4)
+val SoftInk = Color(0xFF261D35)
+val SoftMuted = Color(0xFF71647D)
+val SoftPeach = Color(0xFFFCE6D9)

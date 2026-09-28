@@ -171,4 +171,10 @@
     <string name="update_download">Download</string>
     <string name="update_later">Later</string>
     <string name="update_open_error">No app is available to open the download link.</string>
+    <string name="soft_title">Select your screen.</string>
+    <string name="soft_subtitle">Find your answer.</string>
+    <string name="soft_start">Select screen</string>
+    <string name="soft_hint">Start with the floating button</string>
+    <string name="soft_bubble">Floating button</string>
+    <string name="soft_home">Home</string>
 </resources>

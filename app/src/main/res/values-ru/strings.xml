@@ -169,4 +169,10 @@
     <string name="update_download">Скачать</string>
     <string name="update_later">Позже</string>
     <string name="update_open_error">Не найдено приложение для открытия ссылки.</string>
+    <string name="soft_title">Выделите область.</string>
+    <string name="soft_subtitle">Получите ответ.</string>
+    <string name="soft_start">Выбрать область</string>
+    <string name="soft_hint">Начните с плавающей кнопки</string>
+    <string name="soft_bubble">Плавающая кнопка</string>
+    <string name="soft_home">Главная</string>
 </resources>

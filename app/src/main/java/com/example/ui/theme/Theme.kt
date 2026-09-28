@@ -31,9 +31,17 @@ private val DarkColorScheme =
 
 private val LightColorScheme =
   lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
+    primary = SoftPrimary,
+    onPrimary = Color.White,
+    secondary = SoftMuted,
     tertiary = Pink40,
+    background = SoftBackground,
+    onBackground = SoftInk,
+    surface = SoftSurface,
+    onSurface = SoftInk,
+    surfaceVariant = SoftSurfaceVariant,
+    onSurfaceVariant = SoftMuted,
+    outline = SoftBorder,
   )
 
 private class SafeIndicationNode(

@@ -49,15 +49,18 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ui.theme.SoftInk
+import com.example.ui.theme.SoftSurface
+import com.example.ui.theme.SoftMuted
 import com.example.R
 import com.example.model.GeminiModelInfo
 import com.example.network.GeminiModelManager
-import com.example.ui.theme.CyanGlow
-import com.example.ui.theme.DarkBorder
+import com.example.ui.theme.SoftPrimary as CyanGlow
+import com.example.ui.theme.SoftBorder as DarkBorder
 import kotlinx.coroutines.launch
 
 // Google Blue color matching the screenshot checkmark circle
-private val SelectionBlue = Color(0xFF0D6EFD)
+private val SelectionBlue = Color(0xFF7950D4)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,7 +81,7 @@ fun GeminiModelSelectionSheet(
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,
         shape = RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp),
-        containerColor = Color(0xFF151C28), // Sleek slate matching the screenshot aesthetic
+        containerColor = SoftSurface, // Sleek slate matching the screenshot aesthetic
         dragHandle = {
             // Drag handle styled exactly like in user's image
             Box(
@@ -116,7 +119,7 @@ fun GeminiModelSelectionSheet(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = stringResource(R.string.model_sheet_title),
-                        color = Color.White,
+                        color = SoftInk,
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -148,7 +151,7 @@ fun GeminiModelSelectionSheet(
                         Icon(
                             imageVector = Icons.Default.Refresh,
                             contentDescription = stringResource(R.string.model_sheet_refresh),
-                            tint = Color.White.copy(alpha = 0.7f),
+                            tint = SoftInk.copy(alpha = 0.7f),
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -168,7 +171,7 @@ fun GeminiModelSelectionSheet(
                     item(key = "header_$category") {
                         Text(
                             text = category,
-                            color = Color(0xFF94A3B8), // Soft muted grey matching the screenshot
+                            color = SoftMuted, // Soft muted grey matching the screenshot
                             fontSize = 15.sp,
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier
@@ -202,7 +205,7 @@ fun GeminiModelSelectionSheet(
                 // Dynamic API endpoint indicator note at the bottom
                 item(key = "footer_info") {
                     Surface(
-                        color = Color(0xFF0F172A),
+                        color = SoftSurface,
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -221,7 +224,7 @@ fun GeminiModelSelectionSheet(
                             Spacer(modifier = Modifier.width(10.dp))
                             Text(
                                 text = "GET v1beta/models • Yangi modellar avtomatik yangilanadi",
-                                color = Color(0xFF94A3B8),
+                                color = SoftMuted,
                                 fontSize = 11.sp
                             )
                         }
@@ -260,7 +263,7 @@ private fun GeminiModelItemRow(
             // Model title (e.g. "3.6 Flash", "3.6 Думающая", "3.1 Pro")
             Text(
                 text = model.displayName,
-                color = Color.White,
+                color = SoftInk,
                 fontSize = 17.sp,
                 fontWeight = FontWeight.SemiBold
             )
@@ -268,7 +271,7 @@ private fun GeminiModelItemRow(
             // Model subtitle/description (e.g. "All-around help", "Решает сложные задачи")
             Text(
                 text = model.description,
-                color = Color(0xFF94A3B8),
+                color = SoftMuted,
                 fontSize = 13.5.sp,
                 lineHeight = 18.sp
             )

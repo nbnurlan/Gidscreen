@@ -169,4 +169,10 @@
     <string name="update_download">Yuklab olish</string>
     <string name="update_later">Keyinroq</string>
     <string name="update_open_error">Yuklab olish havolasini ochadigan ilova topilmadi.</string>
+    <string name="soft_title">Ekranni belgilang.</string>
+    <string name="soft_subtitle">Javobni oling.</string>
+    <string name="soft_start">Ekranni tanlash</string>
+    <string name="soft_hint">Suzuvchi tugma orqali ham boshlang</string>
+    <string name="soft_bubble">Suzuvchi tugma</string>
+    <string name="soft_home">Bosh sahifa</string>
 </resources>
