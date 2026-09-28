@@ -9,6 +9,8 @@ plugins {
   alias(libs.plugins.google.services)
 }
 
+val sideBySideTest = providers.gradleProperty("sideBySideTest").orNull == "true"
+
 android {
   namespace = "com.example"
   compileSdk { version = release(36) { minorApiLevel = 1 } }
@@ -19,6 +21,7 @@ android {
     targetSdk = 36
     versionCode = 3
     versionName = "1.2.1"
+    manifestPlaceholders["appLabel"] = "@string/app_name"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -46,7 +49,14 @@ android {
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
       signingConfig = signingConfigs.getByName("release")
     }
-    debug { signingConfig = signingConfigs.getByName("debugConfig") }
+    debug {
+      signingConfig = signingConfigs.getByName("debugConfig")
+      if (sideBySideTest) {
+        applicationIdSuffix = ".test"
+        versionNameSuffix = "-test"
+        manifestPlaceholders["appLabel"] = "Gidscreen Test"
+      }
+    }
   }
   compileOptions {
     sourceCompatibility = JavaVersion.VERSION_11

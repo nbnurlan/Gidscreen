@@ -35,8 +35,8 @@ A new permanent key establishes a new installation lineage, not compatibility
 with the old one. This workflow deliberately fails instead of silently changing keys.
 
 Pull requests and the fix branch compile and run unit tests with a temporary
-validation-only key and placeholder API configuration. They do not publish an
-installable update artifact or consume the production Gemini secret.
+validation-only key and placeholder API configuration. They upload a separate `Gidscreen-Test` artifact and do not consume the
+production Gemini secret.
 
 Device checks before release:
 - Open chat, select a new area, cancel: the previous chat must reappear.
@@ -94,3 +94,18 @@ update-manifest validation (new/equal/older version, malformed data, wrong app,
 unsafe download URL). Python tests cover release packaging and version metadata.
 Physical-device checks are still required for screen rotation, slow-network
 chat behaviour, and updating an installation signed with the same key.
+
+## Side-by-side device validation
+
+PR and fix-branch builds use `-PsideBySideTest=true`: application ID
+`com.aistudio.screenlasso.aiwzqp.test`, launcher name `Gidscreen Test`.
+Download the `Gidscreen-Test` artifact from a successful Actions run, extract
+its APK, and install it alongside the existing app. It has separate app data
+and permissions, and production update prompts are disabled.
+
+This APK uses placeholder Gemini/Firebase configuration: screen selection,
+rotation and basic chat UI can be checked, but real AI responses, live
+slow-network behaviour and Firebase integration cannot be validated with it.
+The test signing key is temporary per run; a later test APK may require
+uninstalling only Gidscreen Test. Never uninstall the original app for this test.
+Production signing still requires a separately backed-up persistent key.

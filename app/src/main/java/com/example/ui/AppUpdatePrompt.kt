@@ -23,6 +23,8 @@ import com.example.network.AppUpdateChecker
 
 @Composable
 fun AppUpdatePrompt() {
+    // Test installs must not offer production APKs with a different application ID.
+    if (BuildConfig.APPLICATION_ID.endsWith(".test")) return
     val context = LocalContext.current
     var update by remember { mutableStateOf<AppUpdate?>(null) }
     var dismissed by rememberSaveable { mutableStateOf(false) }

@@ -104,7 +104,25 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build APK with Gradle
-        run: ./gradlew assembleDebug testDebugUnitTest --stacktrace
+        env:
+          PRODUCTION_BUILD: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' }}
+        run: |
+          if [ "$PRODUCTION_BUILD" = "true" ]; then
+            ./gradlew assembleDebug testDebugUnitTest --stacktrace
+          else
+            # Match the dummy Firebase config to the isolated test application ID.
+            sed -i 's/com.aistudio.screenlasso.aiwzqp/com.aistudio.screenlasso.aiwzqp.test/g' app/google-services.json
+            ./gradlew assembleDebug testDebugUnitTest -PsideBySideTest=true --stacktrace
+          fi
+
+      - name: Upload side-by-side test APK
+        if: github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Gidscreen-Test
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Test release packaging
         run: python3 -m unittest discover -s scripts -p 'test_*.py' -v
