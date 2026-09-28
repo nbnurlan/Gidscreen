@@ -84,13 +84,32 @@ object ScreenCaptureHelper {
             // Already running with this active projection instance?
             if (currentProjection === mediaProjection && virtualDisplay != null && imageReader != null) {
                 if (currentWidth != width || currentHeight != height || currentDensity != density) {
+                    val oldReader = imageReader
+                    var replacement: ImageReader? = null
                     try {
+                        val captureHandler = handler ?: return false
+                        replacement = createImageReader(width, height, captureHandler)
                         virtualDisplay?.resize(width, height, density)
+                        virtualDisplay?.surface = replacement.surface
+                        imageReader = replacement
                         currentWidth = width
                         currentHeight = height
                         currentDensity = density
+                        latestBitmap?.recycle()
+                        latestBitmap = null
+                        latestBitmapTimestamp = 0L
                     } catch (e: Exception) {
-                        Log.e(TAG, "Error resizing virtual display", e)
+                        replacement?.close()
+                        Log.e(TAG, "Error resizing capture surface", e)
+                        // Keep the existing projection; retry resizing on the next capture.
+                        return false
+                    }
+                    // Failure to close the old reader must not close the replacement.
+                    try {
+                        oldReader?.setOnImageAvailableListener(null, null)
+                        oldReader?.close()
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Unable to close previous capture reader", e)
                     }
                 }
                 return true
@@ -109,35 +128,8 @@ object ScreenCaptureHelper {
             val h = Handler(thread.looper)
             handler = h
 
-            // Ensure format is PixelFormat.RGBA_8888 as required
-            val reader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2)
+            val reader = createImageReader(width, height, h)
             imageReader = reader
-
-            reader.setOnImageAvailableListener({ ir ->
-                var image: Image? = null
-                try {
-                    image = ir.acquireLatestImage() ?: return@setOnImageAvailableListener
-                    val bitmap = convertImageToBitmap(image, width, height) ?: return@setOnImageAvailableListener
-
-                    synchronized(sessionLock) {
-                        latestBitmap?.recycle()
-                        latestBitmap = bitmap
-                        latestBitmapTimestamp = System.currentTimeMillis()
-
-                        val cont = pendingContinuation
-                        if (cont != null && cont.isActive) {
-                            pendingContinuation = null
-                            cont.resume(bitmap.copy(Bitmap.Config.ARGB_8888, true))
-                        }
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error acquiring image frame", e)
-                } finally {
-                    try {
-                        image?.close()
-                    } catch (_: Exception) {}
-                }
-            }, h)
 
             return try {
                 // MANDATORY for Android 14+ (API 34+): registerCallback MUST be called before createVirtualDisplay
@@ -167,6 +159,35 @@ object ScreenCaptureHelper {
                 false
             }
         }
+    }
+
+    private fun createImageReader(width: Int, height: Int, captureHandler: Handler): ImageReader {
+        val reader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2)
+        reader.setOnImageAvailableListener({ source ->
+            synchronized(sessionLock) {
+                // Queued callbacks from a replaced/closed reader must not overwrite new frames.
+                if (imageReader !== source) return@setOnImageAvailableListener
+                var image: Image? = null
+                try {
+                    image = source.acquireLatestImage() ?: return@setOnImageAvailableListener
+                    val bitmap = convertImageToBitmap(image, image.width, image.height)
+                        ?: return@setOnImageAvailableListener
+                    latestBitmap?.recycle()
+                    latestBitmap = bitmap
+                    latestBitmapTimestamp = System.currentTimeMillis()
+                    val continuation = pendingContinuation
+                    pendingContinuation = null
+                    if (continuation != null && continuation.isActive) {
+                        continuation.resume(bitmap.copy(Bitmap.Config.ARGB_8888, true))
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error acquiring image frame", e)
+                } finally {
+                    image?.close()
+                }
+            }
+        }, captureHandler)
+        return reader
     }
 
     private fun convertImageToBitmap(image: Image, targetWidth: Int, targetHeight: Int): Bitmap? {
@@ -288,7 +309,8 @@ object ScreenCaptureHelper {
                 fullScreenBitmap.recycle()
                 maskedBitmap
             } else {
-                fullScreenBitmap.recycle()
+                // createBitmap can return its source when the crop is the entire image.
+                if (rawCropped !== fullScreenBitmap) fullScreenBitmap.recycle()
                 rawCropped
             }
         } catch (e: Exception) {
@@ -309,28 +331,8 @@ object ScreenCaptureHelper {
             return@withContext null
         }
 
-        // 1. Check if an image is immediately available in ImageReader
-        try {
-            val directImage = imageReader?.acquireLatestImage()
-            if (directImage != null) {
-                try {
-                    val directBitmap = convertImageToBitmap(directImage, currentWidth, currentHeight)
-                    if (directBitmap != null) {
-                        synchronized(sessionLock) {
-                            latestBitmap?.recycle()
-                            latestBitmap = directBitmap
-                            latestBitmapTimestamp = System.currentTimeMillis()
-                        }
-                        return@withContext directBitmap.copy(Bitmap.Config.ARGB_8888, true)
-                    }
-                } finally {
-                    try { directImage.close() } catch (_: Exception) {}
-                }
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "Direct acquireLatestImage failed: ${e.message}")
-        }
-
+        // The reader callback is the sole consumer. Sharing acquisition between threads
+        // could recycle a bitmap while the other thread was copying it.
         // 2. Check if a frame already arrived after the minTimestamp (overlay hidden time)
         val threshold = if (minTimestamp > 0L) minTimestamp else captureRequestedTimestamp
         synchronized(sessionLock) {

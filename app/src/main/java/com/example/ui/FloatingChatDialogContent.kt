@@ -117,7 +117,7 @@ fun FloatingChatDialogContent(
     var isMinimized by remember { mutableStateOf(false) }
     var followUpInput by remember { mutableStateOf("") }
     var previewBitmap by remember { mutableStateOf<Bitmap?>(null) }
-    val isAnalyzing = analysisState is AnalysisState.Analyzing
+    val isAnalyzing = analysisState is AnalysisState.Analyzing || analysisState is AnalysisState.Capturing
     val listState = rememberLazyListState()
 
     val visibleMessages = remember(chatMessages.size, chatMessages.count { it.isVisible }) {

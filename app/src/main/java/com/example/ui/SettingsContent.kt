@@ -539,7 +539,7 @@ private fun AppInfoCard() {
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = stringResource(R.string.settings_app_version),
+                    text = "v${com.example.BuildConfig.VERSION_NAME}",
                     color = Color.White.copy(alpha = 0.5f),
                     fontSize = 11.sp
                 )

@@ -131,6 +131,7 @@ class MainActivity : AppCompatActivity() {
 
         setContent {
             MyApplicationTheme {
+                com.example.ui.AppUpdatePrompt()
                 MainAppScreen(
                     requestCaptureInitially = requestCaptureTrigger.value,
                     onRequestCaptureHandled = { requestCaptureTrigger.value = false }
@@ -445,6 +446,7 @@ fun MainAppScreen(
                 },
                 onDismiss = {
                     showInAppLasso = false
+                    showInAppChatDialog = inAppChatMessages.isNotEmpty()
                 }
             )
         }
@@ -469,25 +471,34 @@ fun MainAppScreen(
                     analysisState = inAppAnalysisState,
                     chatMessages = inAppChatMessages,
                     onSendFollowUp = { question ->
-                        inAppChatMessages.add(ChatMessage(sender = MessageSender.USER, text = question))
-                        coroutineScope.launch {
-                            val res = GeminiService.continueChat(
-                                inAppChatMessages.dropLast(1),
-                                question,
-                                inAppThumbnail
-                            )
-                            res.onSuccess { ans ->
-                                inAppChatMessages.add(ChatMessage(sender = MessageSender.AI, text = ans))
-                            }.onFailure { err ->
-                                inAppChatMessages.add(
-                                    ChatMessage(sender = MessageSender.SYSTEM, text = "Error: ${err.message}")
-                                )
+                        if (question.isNotBlank() && inAppAnalysisState !is AnalysisState.Analyzing &&
+                            inAppAnalysisState !is AnalysisState.Capturing) {
+                            val previousState = inAppAnalysisState
+                            val history = inAppChatMessages.toList()
+                            inAppAnalysisState = AnalysisState.Analyzing(inAppThumbnail)
+                            inAppChatMessages.add(ChatMessage(sender = MessageSender.USER, text = question))
+                            coroutineScope.launch {
+                                try {
+                                    val res = GeminiService.continueChat(history, question, inAppThumbnail)
+                                    res.onSuccess { ans ->
+                                        inAppChatMessages.add(ChatMessage(sender = MessageSender.AI, text = ans))
+                                    }.onFailure { err ->
+                                        inAppChatMessages.add(ChatMessage(
+                                            sender = MessageSender.SYSTEM, text = "Error: ${err.message}"
+                                        ))
+                                    }
+                                } finally {
+                                    inAppAnalysisState = previousState
+                                }
                             }
                         }
                     },
                     onNewSelectionRequested = {
-                        showInAppChatDialog = false
-                        showInAppLasso = true
+                        if (inAppAnalysisState !is AnalysisState.Analyzing &&
+                            inAppAnalysisState !is AnalysisState.Capturing) {
+                            showInAppChatDialog = false
+                            showInAppLasso = true
+                        }
                     },
                     onRetry = {
                         inAppThumbnail?.let { bmp ->
@@ -498,6 +509,11 @@ fun MainAppScreen(
                                     inAppAnalysisState = AnalysisState.Success(exp, bmp)
                                     inAppChatMessages.clear()
                                     inAppChatMessages.add(ChatMessage(sender = MessageSender.AI, text = exp))
+                                }.onFailure { error ->
+                                    inAppAnalysisState = AnalysisState.Error(
+                                        message = error.message ?: "Failed to analyze selection.",
+                                        thumbnail = bmp
+                                    )
                                 }
                             }
                         }

@@ -162,4 +162,11 @@
     <string name="image_zoom_hint">Kattalashtirish uchun chimdilang • Surish uchun torting</string>
     <string name="btn_reset_zoom">Dastlabki holat</string>
     <string name="ai_responding_indicator">AI javob tayyorlamoqda...</string>
+
+    <!-- App updates -->
+    <string name="update_title">Yangi versiya mavjud</string>
+    <string name="update_message">Gidscreen %1$s tayyor. Ilovani yangilash uchun APK faylini yuklab oling.</string>
+    <string name="update_download">Yuklab olish</string>
+    <string name="update_later">Keyinroq</string>
+    <string name="update_open_error">Yuklab olish havolasini ochadigan ilova topilmadi.</string>
 </resources>

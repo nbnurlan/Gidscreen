@@ -164,4 +164,11 @@
     <string name="btn_zoom">Zoom</string>
     <string name="input_placeholder_waiting">Gemini is responding…</string>
     <string name="ai_responding_indicator">AI is thinking...</string>
+
+    <!-- App updates -->
+    <string name="update_title">New version available</string>
+    <string name="update_message">Gidscreen %1$s is available. Download the APK to update the app.</string>
+    <string name="update_download">Download</string>
+    <string name="update_later">Later</string>
+    <string name="update_open_error">No app is available to open the download link.</string>
 </resources>

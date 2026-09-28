@@ -162,4 +162,11 @@
     <string name="image_zoom_hint">Масштабируйте жестом pinch • Перемещайте свайпом</string>
     <string name="btn_reset_zoom">Сбросить масштаб</string>
     <string name="ai_responding_indicator">ИИ готовит ответ...</string>
+
+    <!-- App updates -->
+    <string name="update_title">Доступна новая версия</string>
+    <string name="update_message">Доступна Gidscreen %1$s. Скачайте APK, чтобы обновить приложение.</string>
+    <string name="update_download">Скачать</string>
+    <string name="update_later">Позже</string>
+    <string name="update_open_error">Не найдено приложение для открытия ссылки.</string>
 </resources>

@@ -305,7 +305,8 @@ class LassoOverlayService : Service() {
     // Feature 2: Fullscreen Custom Freehand/Lasso Screen Selection
     // -------------------------------------------------------------
     private fun showSelectionOverlay() {
-        if (selectionView != null) return
+        if (selectionView != null || analysisState.value is AnalysisState.Analyzing ||
+            analysisState.value is AnalysisState.Capturing) return
 
         // Hide floating bubble while selecting
         bubbleView?.visibility = View.GONE
@@ -364,8 +365,12 @@ class LassoOverlayService : Service() {
             }
             selectionView = null
         }
-        if (restoreBubble && chatView == null) {
-            bubbleView?.visibility = View.VISIBLE
+        if (restoreBubble) {
+            if (chatView != null) {
+                chatView?.visibility = View.VISIBLE
+            } else {
+                bubbleView?.visibility = View.VISIBLE
+            }
         }
     }
 
@@ -558,7 +563,6 @@ class LassoOverlayService : Service() {
                             handleFollowUp(question)
                         },
                         onNewSelectionRequested = {
-                            chatView?.visibility = View.GONE
                             showSelectionOverlay()
                         },
                         onRetry = {
@@ -593,9 +597,12 @@ class LassoOverlayService : Service() {
                             } catch (_: Exception) {}
                         },
                         onClearChat = {
-                            chatMessages.clear()
-                            currentBitmap = null
-                            analysisState.value = AnalysisState.Idle
+                            if (analysisState.value !is AnalysisState.Analyzing &&
+                                analysisState.value !is AnalysisState.Capturing) {
+                                chatMessages.clear()
+                                currentBitmap = null
+                                analysisState.value = AnalysisState.Idle
+                            }
                         }
                     )
                 }
@@ -612,32 +619,39 @@ class LassoOverlayService : Service() {
     }
 
     private fun handleFollowUp(question: String) {
-        chatMessages.add(
-            ChatMessage(sender = MessageSender.USER, text = question)
-        )
+        val text = question.trim()
+        if (text.isEmpty() || analysisState.value is AnalysisState.Analyzing ||
+            analysisState.value is AnalysisState.Capturing) return
+
+        // Reserve the request synchronously, before another tap can enqueue work.
+        val previousState = analysisState.value
+        val history = chatMessages.toList()
+        analysisState.value = AnalysisState.Analyzing(currentBitmap)
+        chatMessages.add(ChatMessage(sender = MessageSender.USER, text = text))
 
         serviceScope.launch {
-            val result = GeminiService.continueChat(
-                history = chatMessages.dropLast(1),
-                newQuestion = question,
-                bitmap = null
-            )
-            result.onSuccess { answer ->
-                chatMessages.add(
-                    ChatMessage(sender = MessageSender.AI, text = answer)
+            try {
+                val result = GeminiService.continueChat(
+                    history = history,
+                    newQuestion = text,
+                    bitmap = null
                 )
-            }.onFailure { error ->
-                chatMessages.add(
-                    ChatMessage(
+                result.onSuccess { answer ->
+                    chatMessages.add(ChatMessage(sender = MessageSender.AI, text = answer))
+                }.onFailure { error ->
+                    chatMessages.add(ChatMessage(
                         sender = MessageSender.SYSTEM,
                         text = "Error: ${error.message}"
-                    )
-                )
+                    ))
+                }
+            } finally {
+                analysisState.value = previousState
             }
         }
     }
 
     private fun retryAnalysis(bitmap: Bitmap) {
+        if (analysisState.value is AnalysisState.Analyzing) return
         analysisState.value = AnalysisState.Analyzing(bitmap)
         serviceScope.launch {
             val userPrompt = chatMessages.lastOrNull { it.sender == MessageSender.USER }?.text
