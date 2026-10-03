@@ -80,7 +80,7 @@ jobs:
           fi
 
       - name: Restore persistent APK signing key
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/codex/fix-screen-capture-chat'
         env:
           DEBUG_KEYSTORE_BASE64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
         run: |
@@ -91,10 +91,13 @@ jobs:
           printf '%s' "$DEBUG_KEYSTORE_BASE64" | base64 --decode > debug.keystore
           keytool -list -keystore debug.keystore -storepass android -alias androiddebugkey > /dev/null
 
-      - name: Create validation-only signing key
+      - name: Configure test environment
         if: github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master'
+        run: cp .env.example .env
+
+      - name: Create validation-only signing key
+        if: github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master' && github.ref != 'refs/heads/codex/fix-screen-capture-chat'
         run: |
-          cp .env.example .env
           keytool -genkeypair -noprompt -keystore debug.keystore \
             -storepass android -alias androiddebugkey -keypass android \
             -keyalg RSA -keysize 2048 -validity 30 \
@@ -114,6 +117,20 @@ jobs:
             sed -i 's/com.aistudio.screenlasso.aiwzqp/com.aistudio.screenlasso.aiwzqp.test/g' app/google-services.json
             ./gradlew assembleDebug testDebugUnitTest -PsideBySideTest=true --stacktrace
           fi
+
+      - name: Verify APK signing certificate
+        run: |
+          set -euo pipefail
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -n 1)
+          test -n "$APKSIGNER"
+          keytool -exportcert -keystore debug.keystore -storepass android -alias androiddebugkey -file signing-cert.der
+          EXPECTED=$(sha256sum signing-cert.der | cut -d ' ' -f 1)
+          for APK in app/build/outputs/apk/debug/*.apk; do
+            "$APKSIGNER" verify --verbose --print-certs "$APK" > signing-verification.txt
+            ACTUAL=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' signing-verification.txt)
+            test "$ACTUAL" = "$EXPECTED"
+          done
+          echo "APK signature verified; certificate SHA-256: $EXPECTED"
 
       - name: Upload side-by-side test APK
         if: github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master'
