@@ -128,7 +128,7 @@ jobs:
           EXPECTED=$(sha256sum signing-cert.der | cut -d ' ' -f 1)
           for APK in app/build/outputs/apk/debug/*.apk; do
             "$APKSIGNER" verify --verbose --print-certs "$APK" | tee signing-verification.txt
-            ACTUAL=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' signing-verification.txt)
+            ACTUAL=$(sed -nE 's/^.*[Ss]igner[^:]*:?[ ]+certificate SHA-256 digest: ([0-9a-fA-F]{64})$/\1/p' signing-verification.txt | tr 'A-F' 'a-f' | sort -u)
             if [ "$ACTUAL" != "$EXPECTED" ]; then
               echo "::error::APK certificate mismatch: expected $EXPECTED, found $ACTUAL"
               exit 1
