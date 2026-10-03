@@ -123,12 +123,16 @@ jobs:
           set -euo pipefail
           APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -n 1)
           test -n "$APKSIGNER"
+          echo "Signature verifier: $APKSIGNER"
           keytool -exportcert -keystore debug.keystore -storepass android -alias androiddebugkey -file signing-cert.der
           EXPECTED=$(sha256sum signing-cert.der | cut -d ' ' -f 1)
           for APK in app/build/outputs/apk/debug/*.apk; do
-            "$APKSIGNER" verify --verbose --print-certs "$APK" > signing-verification.txt
+            "$APKSIGNER" verify --verbose --print-certs "$APK" | tee signing-verification.txt
             ACTUAL=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' signing-verification.txt)
-            test "$ACTUAL" = "$EXPECTED"
+            if [ "$ACTUAL" != "$EXPECTED" ]; then
+              echo "::error::APK certificate mismatch: expected $EXPECTED, found $ACTUAL"
+              exit 1
+            fi
           done
           echo "APK signature verified; certificate SHA-256: $EXPECTED"
 
