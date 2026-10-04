@@ -2,7 +2,6 @@ package com.example.network
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.example.BuildConfig
 import com.example.model.GeminiModelInfo
 import com.example.util.LocaleHelper
 import kotlinx.coroutines.CoroutineScope
@@ -102,7 +101,7 @@ object GeminiModelManager {
     }
 
     fun isApiKeyValid(): Boolean {
-        val key = BuildConfig.GEMINI_API_KEY
+        val key = GeminiKeyStore.get()
         return key.isNotBlank() && key != "MY_GEMINI_API_KEY"
     }
 
@@ -128,16 +127,17 @@ object GeminiModelManager {
         context: Context,
         forceRefresh: Boolean = false
     ): Result<List<GeminiModelInfo>> = withContext(Dispatchers.IO) {
-        val apiKey = BuildConfig.GEMINI_API_KEY
+        val apiKey = GeminiKeyStore.get()
         if (!isApiKeyValid()) {
             return@withContext Result.success(_availableModels.value)
         }
 
         _isLoading.value = true
         try {
-            val url = "$MODELS_LIST_URL?key=$apiKey"
+            val url = "$MODELS_LIST_URL"
             val request = Request.Builder()
                 .url(url)
+                .header("x-goog-api-key", apiKey)
                 .get()
                 .build()
 

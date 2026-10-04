@@ -60,12 +60,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
+import com.example.ui.theme.SoftInk
+import com.example.ui.theme.SoftBackground
 import com.example.network.GeminiModelManager
 import com.example.network.GeminiService
-import com.example.ui.theme.CyanGlow
-import com.example.ui.theme.DarkBorder
-import com.example.ui.theme.DarkSurface
-import com.example.ui.theme.PurpleNeon
+import com.example.ui.theme.SoftPrimary as CyanGlow
+import com.example.ui.theme.SoftBorder as DarkBorder
+import com.example.ui.theme.SoftSurface as DarkSurface
+import com.example.ui.theme.SoftPrimary as PurpleNeon
 import com.example.util.AppLanguage
 import com.example.util.LocaleHelper
 
@@ -88,8 +90,8 @@ fun SettingsContent(
         AlertDialog(
             onDismissRequest = { showLanguageDialog = false },
             containerColor = DarkSurface,
-            titleContentColor = Color.White,
-            textContentColor = Color.White.copy(alpha = 0.85f),
+            titleContentColor = SoftInk,
+            textContentColor = SoftInk.copy(alpha = 0.85f),
             icon = {
                 Icon(
                     imageVector = Icons.Default.Language,
@@ -113,15 +115,15 @@ fun SettingsContent(
                     LocaleHelper.supportedLanguages.forEach { lang ->
                         val isSelected = currentLang == lang.code
                         Surface(
-                            color = if (isSelected) CyanGlow.copy(alpha = 0.15f) else Color(0xFF0F172A),
-                            shape = RoundedCornerShape(12.dp),
+                            color = if (isSelected) CyanGlow.copy(alpha = 0.15f) else SoftBackground,
+                            shape = RoundedCornerShape(20.dp),
                             border = BorderStroke(
                                 width = if (isSelected) 1.5.dp else 1.dp,
                                 color = if (isSelected) CyanGlow else DarkBorder
                             ),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(RoundedCornerShape(20.dp))
                                 .clickable {
                                     LocaleHelper.setLanguage(context, lang.code)
                                     val msg = context.getString(R.string.toast_language_changed, lang.nativeName)
@@ -144,7 +146,7 @@ fun SettingsContent(
                                     Text(text = lang.flag, fontSize = 22.sp)
                                     Text(
                                         text = lang.nativeName,
-                                        color = if (isSelected) CyanGlow else Color.White,
+                                        color = if (isSelected) CyanGlow else SoftInk,
                                         fontSize = 15.sp,
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                                     )
@@ -159,7 +161,7 @@ fun SettingsContent(
                                     },
                                     colors = RadioButtonDefaults.colors(
                                         selectedColor = CyanGlow,
-                                        unselectedColor = Color.White.copy(alpha = 0.5f)
+                                        unselectedColor = SoftInk.copy(alpha = 0.7f)
                                     )
                                 )
                             }
@@ -196,14 +198,14 @@ fun SettingsContent(
             Column(modifier = Modifier.padding(bottom = 4.dp)) {
                 Text(
                     text = stringResource(R.string.settings_title),
-                    color = Color.White,
+                    color = SoftInk,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = stringResource(R.string.settings_subtitle),
-                    color = Color.White.copy(alpha = 0.65f),
+                    color = SoftInk.copy(alpha = 0.65f),
                     fontSize = 12.sp
                 )
             }
@@ -226,7 +228,7 @@ fun SettingsContent(
             item {
                 Text(
                     text = stringResource(R.string.section_permissions_title),
-                    color = Color.White,
+                    color = SoftInk,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
@@ -245,6 +247,9 @@ fun SettingsContent(
         // -------------------------------------------------------------
         // 3. Gemini AI Model Configuration
         // -------------------------------------------------------------
+        item {
+            GeminiKeySettingsCard()
+        }
         item {
             AiModelSettingsCard(onOpenModelSelection = onOpenModelSelection)
         }
@@ -275,12 +280,12 @@ fun LanguageSettingsCard(
 
     Card(
         colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(24.dp),
         border = BorderStroke(1.dp, DarkBorder),
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(6.dp, RoundedCornerShape(16.dp))
-            .clip(RoundedCornerShape(16.dp))
+            .shadow(6.dp, RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(24.dp))
             .clickable { onClick() }
             .testTag("settings_language_card")
     ) {
@@ -312,13 +317,13 @@ fun LanguageSettingsCard(
                 Column {
                     Text(
                         text = stringResource(R.string.language_settings_title),
-                        color = Color.White,
+                        color = SoftInk,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
                         text = stringResource(R.string.language_settings_desc),
-                        color = Color.White.copy(alpha = 0.6f),
+                        color = SoftInk.copy(alpha = 0.72f),
                         fontSize = 11.sp
                     )
                 }
@@ -351,17 +356,17 @@ fun LanguageSettingsCard(
 private fun AiModelSettingsCard(
     onOpenModelSelection: () -> Unit = {}
 ) {
-    val isConfigured = GeminiService.isApiKeyConfigured()
+    val isConfigured by com.example.network.GeminiKeyStore.configured.collectAsState()
     val activeModelId by GeminiModelManager.selectedModelId.collectAsState()
     val currentModel = GeminiModelManager.getSelectedModel()
 
     Card(
         colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(24.dp),
         border = BorderStroke(1.dp, DarkBorder),
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(4.dp, RoundedCornerShape(16.dp))
+            .shadow(4.dp, RoundedCornerShape(24.dp))
             .clickable(onClick = onOpenModelSelection)
             .testTag("ai_model_settings_card")
     ) {
@@ -392,13 +397,13 @@ private fun AiModelSettingsCard(
                     Column {
                         Text(
                             text = stringResource(R.string.settings_section_ai),
-                            color = Color.White,
+                            color = SoftInk,
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
                             text = if (isConfigured) stringResource(R.string.api_card_ready) else stringResource(R.string.api_card_pending),
-                            color = if (isConfigured) Color(0xFF10B981) else Color(0xFFF59E0B),
+                            color = if (isConfigured) Color(0xFF197653) else Color(0xFF986000),
                             fontSize = 11.sp
                         )
                     }
@@ -424,7 +429,7 @@ private fun AiModelSettingsCard(
 
             Text(
                 text = currentModel.description.ifBlank { stringResource(R.string.settings_model_desc) },
-                color = Color.White.copy(alpha = 0.7f),
+                color = SoftInk.copy(alpha = 0.7f),
                 fontSize = 12.sp,
                 lineHeight = 17.sp
             )
@@ -436,7 +441,7 @@ private fun AiModelSettingsCard(
                 horizontalArrangement = Arrangement.End
             ) {
                 Surface(
-                    color = Color(0xFF1E293B),
+                    color = CyanGlow.copy(alpha = 0.08f),
                     shape = RoundedCornerShape(8.dp),
                     border = BorderStroke(1.dp, CyanGlow.copy(alpha = 0.3f)),
                     modifier = Modifier.clickable(onClick = onOpenModelSelection)
@@ -458,11 +463,11 @@ private fun AiModelSettingsCard(
 private fun FloatingOverlaySettingsCard() {
     Card(
         colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(24.dp),
         border = BorderStroke(1.dp, DarkBorder),
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(4.dp, RoundedCornerShape(16.dp))
+            .shadow(4.dp, RoundedCornerShape(24.dp))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -486,13 +491,13 @@ private fun FloatingOverlaySettingsCard() {
                 Column {
                     Text(
                         text = stringResource(R.string.settings_section_overlay),
-                        color = Color.White,
+                        color = SoftInk,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
                         text = stringResource(R.string.settings_overlay_tuck_info),
-                        color = Color.White.copy(alpha = 0.6f),
+                        color = SoftInk.copy(alpha = 0.72f),
                         fontSize = 11.sp,
                         lineHeight = 16.sp
                     )
@@ -506,11 +511,11 @@ private fun FloatingOverlaySettingsCard() {
 private fun AppInfoCard() {
     Card(
         colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(24.dp),
         border = BorderStroke(1.dp, DarkBorder),
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(4.dp, RoundedCornerShape(16.dp))
+            .shadow(4.dp, RoundedCornerShape(24.dp))
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -521,26 +526,26 @@ private fun AppInfoCard() {
                 modifier = Modifier
                     .size(38.dp)
                     .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.08f)),
+                    .background(SoftInk.copy(alpha = 0.08f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Info,
                     contentDescription = null,
-                    tint = Color.White.copy(alpha = 0.7f),
+                    tint = SoftInk.copy(alpha = 0.7f),
                     modifier = Modifier.size(20.dp)
                 )
             }
             Column {
                 Text(
                     text = stringResource(R.string.settings_section_about),
-                    color = Color.White,
+                    color = SoftInk,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = stringResource(R.string.settings_app_version),
-                    color = Color.White.copy(alpha = 0.5f),
+                    text = "v${com.example.BuildConfig.VERSION_NAME}",
+                    color = SoftInk.copy(alpha = 0.7f),
                     fontSize = 11.sp
                 )
             }

@@ -2,8 +2,17 @@ name: Build APK
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: [ "main", "master", "codex/fix-screen-capture-chat" ]
+  pull_request:
   workflow_dispatch:
+    inputs:
+      publish_release:
+        description: 'Publish the tested APK and update notification metadata'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -20,17 +29,8 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Configure Gemini API key
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: |
-          if [ -z "$GEMINI_API_KEY" ]; then
-            echo "GEMINI_API_KEY secret is missing"
-            exit 1
-          fi
-          cp .env.example .env
-          sed -i '/^GEMINI_API_KEY=/d' .env
-          printf '\nGEMINI_API_KEY=%s\n' "$GEMINI_API_KEY" >> .env
+      - name: Configure credential-free build
+        run: cp .env.example .env
 
       - name: Ensure google-services.json exists
         run: |
@@ -69,35 +69,124 @@ jobs:
           EOF
           fi
 
-      - name: Ensure debug.keystore exists
+      - name: Restore persistent APK signing key
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/codex/fix-screen-capture-chat'
+        env:
+          DEBUG_KEYSTORE_BASE64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
         run: |
-          if [ ! -f debug.keystore ]; then
-            if [ -f debug.keystore.base64 ]; then
-              echo "Restoring debug.keystore from debug.keystore.base64..."
-              base64 -d debug.keystore.base64 > debug.keystore
-            else
-              echo "Generating fallback debug.keystore using keytool..."
-              keytool -genkey -v \
-                -keystore debug.keystore \
-                -storepass android \
-                -alias androiddebugkey \
-                -keypass android \
-                -keyalg RSA \
-                -keysize 2048 \
-                -validity 10000 \
-                -dname "CN=Android Debug,O=Android,C=US"
-            fi
+          if [ -z "$DEBUG_KEYSTORE_BASE64" ]; then
+            echo "::error::Add DEBUG_KEYSTORE_BASE64 containing the original debug.keystore. A new random key cannot update installed APKs. See README.md."
+            exit 1
           fi
+          printf '%s' "$DEBUG_KEYSTORE_BASE64" | base64 --decode > debug.keystore
+          keytool -list -keystore debug.keystore -storepass android -alias androiddebugkey > /dev/null
+
+      - name: Create validation-only signing key
+        if: github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master' && github.ref != 'refs/heads/codex/fix-screen-capture-chat'
+        run: |
+          keytool -genkeypair -noprompt -keystore debug.keystore \
+            -storepass android -alias androiddebugkey -keypass android \
+            -keyalg RSA -keysize 2048 -validity 30 \
+            -dname "CN=Validation Only"
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
       - name: Build APK with Gradle
-        run: ./gradlew assembleDebug --stacktrace
+        env:
+          PRODUCTION_BUILD: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' }}
+        run: |
+          if [ "$PRODUCTION_BUILD" = "true" ]; then
+            ./gradlew assembleDebug testDebugUnitTest --stacktrace
+          else
+            # Match the dummy Firebase config to the isolated test application ID.
+            sed -i 's/com.aistudio.screenlasso.aiwzqp/com.aistudio.screenlasso.aiwzqp.test/g' app/google-services.json
+            ./gradlew assembleDebug testDebugUnitTest -PsideBySideTest=true --stacktrace
+          fi
+
+      - name: Verify APK signing certificate
+        run: |
+          set -euo pipefail
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -n 1)
+          test -n "$APKSIGNER"
+          echo "Signature verifier: $APKSIGNER"
+          keytool -exportcert -keystore debug.keystore -storepass android -alias androiddebugkey -file signing-cert.der
+          EXPECTED=$(sha256sum signing-cert.der | cut -d ' ' -f 1)
+          for APK in app/build/outputs/apk/debug/*.apk; do
+            "$APKSIGNER" verify --verbose --print-certs "$APK" | tee signing-verification.txt
+            ACTUAL=$(sed -nE 's/^.*[Ss]igner[^:]*:?[ ]+certificate SHA-256 digest: ([0-9a-fA-F]{64})$/\1/p' signing-verification.txt | tr 'A-F' 'a-f' | sort -u)
+            if [ "$ACTUAL" != "$EXPECTED" ]; then
+              echo "::error::APK certificate mismatch: expected $EXPECTED, found $ACTUAL"
+              exit 1
+            fi
+          done
+          echo "APK signature verified; certificate SHA-256: $EXPECTED"
+
+      - name: Upload side-by-side test APK
+        if: github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Gidscreen-Test
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Test release packaging
+        run: python3 -m unittest discover -s scripts -p 'test_*.py' -v
+
+      - name: Package APK and update metadata
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        run: python3 scripts/prepare_release.py app/build/outputs/apk/debug/output-metadata.json dist
 
       - name: Upload APK Artifact
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          path: app/build/outputs/apk/debug/*.apk
+          path: dist/*
           if-no-files-found: error
+
+  publish:
+    needs: build
+    if: >-
+      github.event_name == 'workflow_dispatch' && inputs.publish_release &&
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: gidscreen-release
+      cancel-in-progress: false
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: app-debug
+          path: dist
+      - name: Publish a new version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION_NAME=$(python3 -c 'import json; print(json.load(open("dist/update.json"))["versionName"])')
+          VERSION_CODE=$(python3 -c 'import json; print(json.load(open("dist/update.json"))["versionCode"])')
+          TAG="v${VERSION_NAME}"
+          # Never replace an already distributed APK with a different binary/key.
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "::error::This version already exists. Increase versionCode and versionName."
+            exit 1
+          fi
+          # Check prior published update manifests, allowing the first release (empty list).
+          gh api --paginate "repos/$GH_REPO/releases" --jq '.[] | select(.draft == false and .prerelease == false) | .assets[] | select(.name == "update.json") | .url' > manifests.txt
+          while IFS= read -r manifest_url; do
+            gh api -H 'Accept: application/octet-stream' "$manifest_url" > previous.json
+            PREVIOUS_CODE=$(python3 -c 'import json; print(json.load(open("previous.json"))["versionCode"])')
+            if [ "$VERSION_CODE" -le "$PREVIOUS_CODE" ]; then
+              echo "::error::versionCode must exceed every published version."
+              exit 1
+            fi
+          done < manifests.txt
+          gh release create "$TAG" dist/Gidscreen.apk dist/update.json \
+            --target "$GITHUB_SHA" --title "Gidscreen $VERSION_NAME" \
+            --notes "Gidscreen $VERSION_NAME (Android versionCode $VERSION_CODE)." --latest
