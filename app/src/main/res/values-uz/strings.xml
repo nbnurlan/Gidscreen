@@ -147,7 +147,7 @@
     <string name="error_analyze_failed">Tanlangan sohani tahlil qilib bo\'lmadi.</string>
     <string name="error_general_gemini">Gemini AI orqali ekran qismini tahlil qilishda xatolik yuz berdi.</string>
     <string name="error_api_key_leaked">Gemini API kaliti sizib chiqqanligi sababli Google tomonidan bekor qilingan. Iltimos, AI Studio Secrets paneliga yangi GEMINI_API_KEY kiriting.</string>
-    <string name="error_api_key_invalid">Gemini API kaliti yaroqsiz yoki kiritilmagan. Iltimos, AI Studio Secrets panelini tekshiring.</string>
+    <string name="error_api_key_invalid">Gemini API kaliti yaroqsiz yoki kiritilmagan. Iltimos, Sozlamalar → Gemini API kaliti bo‘limini tekshiring.</string>
 
     <!-- Gemini Model Selection BottomSheet -->
     <string name="model_sheet_title">Gemini modelini tanlash</string>
@@ -175,4 +175,13 @@
     <string name="soft_hint">Suzuvchi tugma orqali ham boshlang</string>
     <string name="soft_bubble">Suzuvchi tugma</string>
     <string name="soft_home">Bosh sahifa</string>
+
+    <string name="gemini_key_title">Gemini API kaliti</string>
+    <string name="gemini_key_saved">Kalit telefonda saqlandi. Tekshirish uchun xabar yuboring.</string>
+    <string name="gemini_key_missing">Kalit kiritilmagan.</string>
+    <string name="gemini_key_help">Google AI Studio kalitingizni kiriting. U shu telefonda saqlanadi va AI so‘rovlari uchun Google’ga yuboriladi.</string>
+    <string name="gemini_key_edit">Kalit kiritish yoki almashtirish</string>
+    <string name="gemini_key_remove">Kalitni o‘chirish</string>
+    <string name="gemini_key_save">Saqlash</string>
+    <string name="gemini_key_error">Saqlanmadi. Kalitni tekshirib, qayta urinib ko‘ring.</string>
 </resources>

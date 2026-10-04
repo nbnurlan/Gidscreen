@@ -248,6 +248,9 @@ fun SettingsContent(
         // 3. Gemini AI Model Configuration
         // -------------------------------------------------------------
         item {
+            GeminiKeySettingsCard()
+        }
+        item {
             AiModelSettingsCard(onOpenModelSelection = onOpenModelSelection)
         }
 
@@ -353,7 +356,7 @@ fun LanguageSettingsCard(
 private fun AiModelSettingsCard(
     onOpenModelSelection: () -> Unit = {}
 ) {
-    val isConfigured = GeminiService.isApiKeyConfigured()
+    val isConfigured by com.example.network.GeminiKeyStore.configured.collectAsState()
     val activeModelId by GeminiModelManager.selectedModelId.collectAsState()
     val currentModel = GeminiModelManager.getSelectedModel()
 

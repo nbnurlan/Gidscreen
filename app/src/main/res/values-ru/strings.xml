@@ -146,8 +146,8 @@
     <string name="error_no_projection">Разрешение на захват экрана не активно. Нажмите \'Предоставить и запустить\' в приложении Screen Lasso.</string>
     <string name="error_analyze_failed">Не удалось проанализировать выделенный фрагмент.</string>
     <string name="error_general_gemini">Ошибка при анализе фрагмента экрана через Gemini AI.</string>
-    <string name="error_api_key_leaked">Ключ Gemini API отозван Google из-за утечки. Пожалуйста, укажите новый GEMINI_API_KEY в панели Secrets AI Studio.</string>
-    <string name="error_api_key_invalid">Ключ Gemini API недействителен. Пожалуйста, проверьте GEMINI_API_KEY в панели Secrets AI Studio.</string>
+    <string name="error_api_key_leaked">Ключ Gemini API отозван Google из-за утечки. Пожалуйста, укажите новый GEMINI_API_KEY в разделе Настройки → Ключ Gemini API.</string>
+    <string name="error_api_key_invalid">Ключ Gemini API недействителен. Пожалуйста, проверьте GEMINI_API_KEY в разделе Настройки → Ключ Gemini API.</string>
 
     <!-- Gemini Model Selection BottomSheet -->
     <string name="model_sheet_title">Выбор модели Gemini</string>
@@ -175,4 +175,13 @@
     <string name="soft_hint">Начните с плавающей кнопки</string>
     <string name="soft_bubble">Плавающая кнопка</string>
     <string name="soft_home">Главная</string>
+
+    <string name="gemini_key_title">Ключ Gemini API</string>
+    <string name="gemini_key_saved">Ключ сохранён на устройстве. Отправьте сообщение для проверки.</string>
+    <string name="gemini_key_missing">Ключ не задан.</string>
+    <string name="gemini_key_help">Введите свой ключ Google AI Studio. Он хранится на устройстве и отправляется Google для запросов ИИ.</string>
+    <string name="gemini_key_edit">Ввести или заменить ключ</string>
+    <string name="gemini_key_remove">Удалить ключ</string>
+    <string name="gemini_key_save">Сохранить</string>
+    <string name="gemini_key_error">Не удалось сохранить. Проверьте ключ и попробуйте ещё раз.</string>
 </resources>

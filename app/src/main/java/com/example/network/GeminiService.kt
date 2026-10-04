@@ -2,7 +2,6 @@ package com.example.network
 
 import android.graphics.Bitmap
 import android.util.Base64
-import com.example.BuildConfig
 import com.example.model.ChatMessage
 import com.example.model.MessageSender
 import com.example.util.LocaleHelper
@@ -39,7 +38,7 @@ object GeminiService {
         .build()
 
     fun isApiKeyConfigured(): Boolean {
-        val key = BuildConfig.GEMINI_API_KEY
+        val key = GeminiKeyStore.get()
         return key.isNotBlank() && key != "MY_GEMINI_API_KEY"
     }
 
@@ -76,9 +75,9 @@ object GeminiService {
             val message = errorObj?.optString("message", "")
             if (!message.isNullOrBlank()) {
                 if (message.contains("leaked", ignoreCase = true)) {
-                    ApiKeyLeakedException("Your API key was reported as leaked and revoked by Google. Please enter a new GEMINI_API_KEY in the AI Studio Secrets panel.")
+                    ApiKeyLeakedException("Your API key was reported as leaked and revoked by Google. Please enter a new GEMINI_API_KEY in Settings → Gemini API key.")
                 } else if (code == 400 && (message.contains("API_KEY_INVALID", ignoreCase = true) || message.contains("API key not valid", ignoreCase = true))) {
-                    ApiKeyInvalidException("Invalid Gemini API key. Please check GEMINI_API_KEY in the AI Studio Secrets panel.")
+                    ApiKeyInvalidException("Invalid Gemini API key. Please check GEMINI_API_KEY in Settings → Gemini API key.")
                 } else {
                     Exception("Gemini API Error ($code): $message")
                 }
@@ -118,7 +117,7 @@ object GeminiService {
         bitmap: Bitmap,
         customInstruction: String? = null
     ): Result<String> = withContext(Dispatchers.IO) {
-        val apiKey = BuildConfig.GEMINI_API_KEY
+        val apiKey = GeminiKeyStore.get()
 
         if (!isApiKeyConfigured()) {
             val currentLang = LocaleHelper.currentLanguage.value
@@ -130,21 +129,21 @@ object GeminiService {
                     "• **Тип:** Снимок выделенной области\n" +
                     "• **Модель:** `$modelName`\n" +
                     "• **Статус:** Готов к облачному анализу\n\n" +
-                    "🔑 *Примечание*: Чтобы получать живые ответы от Google Gemini, укажите `GEMINI_API_KEY` в панели Secrets в AI Studio."
+                    "🔑 *Примечание*: Чтобы получать живые ответы от Google Gemini, укажите `GEMINI_API_KEY` в разделе Настройки → Ключ Gemini API."
                 LocaleHelper.LANG_EN ->
                     "✨ **Screen Selection Captured (${bitmap.width}x${bitmap.height}px)**\n\n" +
                     "**Selection Analysis Ready:**\n" +
                     "• **Type:** High-resolution screen crop\n" +
                     "• **Model:** `$modelName`\n" +
                     "• **Status:** Ready for live cloud reasoning\n\n" +
-                    "🔑 *Note*: To get live AI answers from Google Gemini, add your `GEMINI_API_KEY` in the AI Studio Secrets panel."
+                    "🔑 *Note*: To get live AI answers from Google Gemini, add your `GEMINI_API_KEY` in Settings → Gemini API key."
                 else -> // Uzbek
                     "✨ **Ekrandan belgilangan qism saqlandi (${bitmap.width}x${bitmap.height}px)**\n\n" +
                     "**Tahlilga tayyor:**\n" +
                     "• **Turi:** Yuqori aniqlikdagi ekran parchasi\n" +
                     "• **Model:** `$modelName`\n" +
                     "• **Holat:** Bulutli AI tahliliga tayyor\n\n" +
-                    "🔑 *Eslatma*: Google Gemini'dan jonli o'zbek tilidagi tahlillarni olish uchun AI Studio Secrets panelida `GEMINI_API_KEY` kalitini kiriting. Suzuvchi tugma va ekranni belgilash tizimi to'liq faol!"
+                    "🔑 *Eslatma*: Google Gemini'dan jonli o'zbek tilidagi tahlillarni olish uchun Sozlamalar → Gemini API kaliti bo‘limida `GEMINI_API_KEY` kalitini kiriting. Suzuvchi tugma va ekranni belgilash tizimi to'liq faol!"
             }
             return@withContext Result.success(offlineMsg)
         }
@@ -182,7 +181,8 @@ object GeminiService {
             }
 
             val request = Request.Builder()
-                .url("$BASE_URL/$activeModel:generateContent?key=$apiKey")
+                .url("$BASE_URL/$activeModel:generateContent")
+                .header("x-goog-api-key", apiKey)
                 .post(jsonBody.toString().toRequestBody("application/json".toMediaType()))
                 .build()
 
@@ -224,17 +224,17 @@ object GeminiService {
         newQuestion: String,
         bitmap: Bitmap?
     ): Result<String> = withContext(Dispatchers.IO) {
-        val apiKey = BuildConfig.GEMINI_API_KEY
+        val apiKey = GeminiKeyStore.get()
         if (!isApiKeyConfigured()) {
             val currentLang = LocaleHelper.currentLanguage.value
             val modelName = getActiveModelDisplayName()
             val offlineChatMsg = when (currentLang) {
                 LocaleHelper.LANG_RU ->
-                    "💬 **Ответ ИИ**: Для продолжения диалога по этому снимку с `$modelName`, пожалуйста, укажите `GEMINI_API_KEY` в панели AI Studio Secrets."
+                    "💬 **Ответ ИИ**: Для продолжения диалога по этому снимку с `$modelName`, пожалуйста, укажите `GEMINI_API_KEY` в разделе Настройки → Ключ Gemini API."
                 LocaleHelper.LANG_EN ->
-                    "💬 **AI Response**: To continue interactive multi-turn discussions about this screen selection with `$modelName`, please provide a valid `GEMINI_API_KEY` in the AI Studio Secrets panel."
+                    "💬 **AI Response**: To continue interactive multi-turn discussions about this screen selection with `$modelName`, please provide a valid `GEMINI_API_KEY` in Settings → Gemini API key."
                 else -> // Uzbek
-                    "💬 **AI Javobi**: `$modelName` orqali tanlangan ekran parchasi bo'yicha o'zbek tilida suhbatni davom ettirish uchun AI Studio Secrets panelida `GEMINI_API_KEY` kalitini kiriting."
+                    "💬 **AI Javobi**: `$modelName` orqali tanlangan ekran parchasi bo'yicha o'zbek tilida suhbatni davom ettirish uchun Sozlamalar → Gemini API kaliti bo‘limida `GEMINI_API_KEY` kalitini kiriting."
             }
             return@withContext Result.success(offlineChatMsg)
         }
@@ -291,7 +291,8 @@ object GeminiService {
             }
 
             val request = Request.Builder()
-                .url("$BASE_URL/$activeModel:generateContent?key=$apiKey")
+                .url("$BASE_URL/$activeModel:generateContent")
+                .header("x-goog-api-key", apiKey)
                 .post(jsonBody.toString().toRequestBody("application/json".toMediaType()))
                 .build()
 

@@ -51,7 +51,7 @@
     <!-- Gemini API -->
     <string name="api_card_title">Google Gemini API</string>
     <string name="api_card_ready">Connected • gemini-3.6-flash ready</string>
-    <string name="api_card_pending">AI Studio Secrets • Live Key Configured via .env</string>
+    <string name="api_card_pending">Settings → Gemini API key</string>
 
     <!-- Quick Guide -->
     <string name="guide_title">How to Use Screen Lasso AI</string>
@@ -146,8 +146,8 @@
     <string name="error_no_projection">Screen capture permission not active. Please tap \'Grant &amp; Start Capture\' in the Screen Lasso app.</string>
     <string name="error_analyze_failed">Failed to analyze selection.</string>
     <string name="error_general_gemini">Failed to analyze screen selection with Gemini AI.</string>
-    <string name="error_api_key_leaked">Your Gemini API key was reported as leaked and revoked by Google. Please enter a new GEMINI_API_KEY in the AI Studio Secrets panel.</string>
-    <string name="error_api_key_invalid">Invalid or missing Gemini API key. Please check GEMINI_API_KEY in the AI Studio Secrets panel.</string>
+    <string name="error_api_key_leaked">Your Gemini API key was reported as leaked and revoked by Google. Please enter a new GEMINI_API_KEY in Settings → Gemini API key.</string>
+    <string name="error_api_key_invalid">Invalid or missing Gemini API key. Please check GEMINI_API_KEY in Settings → Gemini API key.</string>
 
     <!-- Gemini Model Selection BottomSheet -->
     <string name="model_sheet_title">Select Gemini Model</string>
@@ -177,4 +177,13 @@
     <string name="soft_hint">Start with the floating button</string>
     <string name="soft_bubble">Floating button</string>
     <string name="soft_home">Home</string>
+
+    <string name="gemini_key_title">Gemini API key</string>
+    <string name="gemini_key_saved">Saved on this device. Try a message to check the key.</string>
+    <string name="gemini_key_missing">No key saved.</string>
+    <string name="gemini_key_help">Enter your own Google AI Studio key. It stays on this device and is sent to Google for AI requests.</string>
+    <string name="gemini_key_edit">Enter or replace key</string>
+    <string name="gemini_key_remove">Remove key</string>
+    <string name="gemini_key_save">Save</string>
+    <string name="gemini_key_error">Could not save. Check the key and try again.</string>
 </resources>
