@@ -103,3 +103,17 @@ Enter your own Gemini key in **Settings → Gemini API key**, select an availabl
 Fix-branch APKs now share a persistent signing key. If an older Test APK was signed with a temporary key, only that old Test installation may need removing once. Never uninstall the original app for this test.
 
 Device key checks: save a key, send a message, restart and check persistence, replace it, then remove it and confirm AI requests are disabled. Check that missing-key messages point to app Settings.
+
+
+## Floating button and launcher design
+
+The floating button uses concept 9 (focus corners and diamond); the launcher uses
+concept 10 (soft violet square and sparkle). After 3 seconds idle the overlay
+shrinks to a 24dp edge handle at the nearest side, leaving the rest of the screen
+touchable. Tap the handle to expand; tap the expanded button to select an area.
+Drag to reposition. Selection/chat hide the bubble, and restoring it restarts the
+idle timer. Rotation clamps it back inside the screen.
+
+Device checks: idle on both sides, tap to expand without starting selection, tap
+again to select, drag/cancel drag, close chat, cancel selection, rotate while
+docked, stop service, and verify the new launcher icon.

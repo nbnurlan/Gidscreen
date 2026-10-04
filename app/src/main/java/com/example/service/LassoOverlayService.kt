@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.content.pm.ServiceInfo
 import android.graphics.Bitmap
 import android.graphics.Path
@@ -43,6 +44,7 @@ import com.example.ui.theme.MyApplicationTheme
 import com.example.util.LocaleHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
@@ -69,6 +71,41 @@ class LassoOverlayService : Service() {
     // Overlay Views
     private var bubbleView: ComposeView? = null
     private var bubbleParams: WindowManager.LayoutParams? = null
+    private val bubbleDocked = mutableStateOf(false)
+    private val bubbleDockRight = mutableStateOf(false)
+    private var bubbleIdleJob: Job? = null
+
+    private fun scheduleBubbleDock() {
+        bubbleIdleJob?.cancel()
+        if (bubbleParams == null) return
+        bubbleIdleJob = serviceScope.launch {
+            delay(3000)
+            val view = bubbleView ?: return@launch
+            if (view.visibility != View.VISIBLE) return@launch
+            val params = bubbleParams ?: return@launch
+            val dm = resources.displayMetrics
+            bubbleDockRight.value = params.x + view.width / 2 >= dm.widthPixels / 2
+            bubbleDocked.value = true
+            params.width = (24 * dm.density).toInt()
+            params.x = if (bubbleDockRight.value) dm.widthPixels - params.width else 0
+            runCatching { windowManager.updateViewLayout(view, params) }
+        }
+    }
+
+    private fun expandBubble() {
+        val params = bubbleParams ?: return
+        val view = bubbleView ?: return
+        val dm = resources.displayMetrics
+        params.width = (64 * dm.density).toInt()
+        params.x = if (bubbleDockRight.value) (dm.widthPixels - params.width).coerceAtLeast(0) else 0
+        bubbleDocked.value = false
+        runCatching { windowManager.updateViewLayout(view, params) }
+    }
+
+    private fun restoreFloatingBubble() {
+        bubbleView?.visibility = View.VISIBLE
+        scheduleBubbleDock()
+    }
 
     private var selectionView: ComposeView? = null
     private var selectionParams: WindowManager.LayoutParams? = null
@@ -185,7 +222,7 @@ class LassoOverlayService : Service() {
                     WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
             PixelFormat.TRANSLUCENT
         ).apply {
-            gravity = Gravity.TOP or Gravity.START
+            gravity = Gravity.TOP or Gravity.LEFT
             x = 36
             y = screenHeight / 3
         }
@@ -196,7 +233,7 @@ class LassoOverlayService : Service() {
             bubbleLifecycleOwner.attachToView(this)
             setContent {
                 MyApplicationTheme {
-                    FloatingBubbleContent()
+                    FloatingBubbleContent(docked = bubbleDocked.value, dockRight = bubbleDockRight.value)
                 }
             }
         }
@@ -209,11 +246,15 @@ class LassoOverlayService : Service() {
         var isDragging = false
         val touchSlop = ViewConfiguration.get(this).scaledTouchSlop
         var touchStartTime = 0L
+        var startedDocked = false
 
         view.setOnTouchListener { v, event ->
             val currentParams = bubbleParams ?: return@setOnTouchListener false
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
+                    bubbleIdleJob?.cancel()
+                    startedDocked = bubbleDocked.value
+                    if (startedDocked) expandBubble()
                     initialX = currentParams.x
                     initialY = currentParams.y
                     initialTouchX = event.rawX
@@ -257,7 +298,7 @@ class LassoOverlayService : Service() {
                     if (!isDragging && dx <= touchSlop && dy <= touchSlop && duration < 400) {
                         // Bir marta oddiy bosilganda (click) avvalgi amali (ekranni belgilash) chaqiriladi
                         v.performClick()
-                        showSelectionOverlay()
+                        if (startedDocked) scheduleBubbleDock() else showSelectionOverlay()
                     } else {
                         // Siljitish tugagach qo'yilgan joyda saqlanadi
                         val dm = resources.displayMetrics
@@ -275,6 +316,11 @@ class LassoOverlayService : Service() {
                             e.printStackTrace()
                         }
                     }
+                    scheduleBubbleDock()
+                    true
+                }
+                MotionEvent.ACTION_CANCEL -> {
+                    scheduleBubbleDock()
                     true
                 }
                 else -> false
@@ -285,12 +331,14 @@ class LassoOverlayService : Service() {
         try {
             windowManager.addView(view, params)
             bubbleView = view
+            scheduleBubbleDock()
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
     private fun hideFloatingBubble() {
+        bubbleIdleJob?.cancel()
         bubbleView?.let {
             try {
                 windowManager.removeView(it)
@@ -352,7 +400,7 @@ class LassoOverlayService : Service() {
             selectionView = view
         } catch (e: Exception) {
             e.printStackTrace()
-            bubbleView?.visibility = View.VISIBLE
+            restoreFloatingBubble()
         }
     }
 
@@ -369,7 +417,7 @@ class LassoOverlayService : Service() {
             if (chatView != null) {
                 chatView?.visibility = View.VISIBLE
             } else {
-                bubbleView?.visibility = View.VISIBLE
+                restoreFloatingBubble()
             }
         }
     }
@@ -576,7 +624,7 @@ class LassoOverlayService : Service() {
                         },
                         onClose = {
                             hideFloatingChatDialog()
-                            bubbleView?.visibility = View.VISIBLE
+                            restoreFloatingBubble()
                         },
                         onDragDelta = { dx, dy ->
                             val cp = chatParams ?: return@FloatingChatDialogContent
@@ -688,7 +736,20 @@ class LassoOverlayService : Service() {
             chatView = null
         }
         chatLifecycleOwner.onStop()
-        bubbleView?.visibility = View.VISIBLE
+        restoreFloatingBubble()
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        val params = bubbleParams ?: return
+        val view = bubbleView ?: return
+        bubbleIdleJob?.cancel()
+        if (bubbleDocked.value) expandBubble()
+        val dm = resources.displayMetrics
+        params.x = params.x.coerceIn(0, (dm.widthPixels - (64 * dm.density).toInt()).coerceAtLeast(0))
+        params.y = params.y.coerceIn(0, (dm.heightPixels - (64 * dm.density).toInt()).coerceAtLeast(0))
+        runCatching { windowManager.updateViewLayout(view, params) }
+        scheduleBubbleDock()
     }
 
     override fun onDestroy() {
