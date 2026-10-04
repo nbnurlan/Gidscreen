@@ -62,9 +62,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.model.SelectionMode
-import com.example.ui.CompactLanguageDropdown
-import com.example.ui.theme.CyanGlow
-import com.example.ui.theme.PurpleNeon
+import com.example.ui.theme.SoftPrimary
+import com.example.ui.theme.SoftSurface
+import com.example.ui.theme.SoftInk
+import com.example.ui.theme.SoftSurfaceVariant
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -229,12 +230,12 @@ fun LassoSelectionContent(
                 // Subtle transparent neon tint inside the drawn path so user clearly sees the framed region
                 drawPath(
                     path = currentPath,
-                    color = CyanGlow.copy(alpha = 0.12f)
+                    color = SoftPrimary.copy(alpha = 0.12f)
                 )
 
                 // Glowing neon contour border around selected area (Solid continuous line)
                 val neonBrush = Brush.linearGradient(
-                    colors = listOf(CyanGlow, PurpleNeon, CyanGlow)
+                    colors = listOf(SoftPrimary, SoftPrimary, SoftPrimary)
                 )
 
                 drawPath(
@@ -267,7 +268,7 @@ fun LassoSelectionContent(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Surface(
-                color = Color(0xEE0F172A),
+                color = SoftSurface,
                 shape = RoundedCornerShape(28.dp),
                 shadowElevation = 8.dp,
                 modifier = Modifier
@@ -320,9 +321,6 @@ fun LassoSelectionContent(
 
                     Spacer(modifier = Modifier.width(2.dp))
 
-                    // Compact Flag Language Selector Dropdown
-                    CompactLanguageDropdown(testTag = "overlay_language_button")
-
                     Spacer(modifier = Modifier.width(2.dp))
 
                     // Undo / Back button (Dismisses selection overlay, returns to screen)
@@ -336,13 +334,13 @@ fun LassoSelectionContent(
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.12f))
+                            .background(SoftSurfaceVariant)
                             .testTag("lasso_undo_button")
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.Undo,
                             contentDescription = stringResource(R.string.btn_cancel),
-                            tint = Color.White,
+                            tint = SoftInk,
                             modifier = Modifier.size(19.dp)
                         )
                     }
@@ -358,13 +356,13 @@ fun LassoSelectionContent(
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.15f))
+                            .background(SoftSurfaceVariant)
                             .testTag("lasso_close_button")
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = stringResource(R.string.btn_cancel),
-                            tint = Color.White,
+                            tint = SoftInk,
                             modifier = Modifier.size(19.dp)
                         )
                     }
@@ -382,7 +380,7 @@ private fun ModePill(
     onClick: () -> Unit
 ) {
     val bgBrush = if (isSelected) {
-        Brush.horizontalGradient(listOf(CyanGlow, PurpleNeon))
+        Brush.horizontalGradient(listOf(SoftPrimary, SoftPrimary))
     } else {
         Brush.horizontalGradient(listOf(Color.Transparent, Color.Transparent))
     }
@@ -399,12 +397,12 @@ private fun ModePill(
         Icon(
             imageVector = icon,
             contentDescription = label,
-            tint = if (isSelected) Color.Black else Color.White.copy(alpha = 0.8f),
+            tint = if (isSelected) Color.White else SoftInk,
             modifier = Modifier.size(16.dp)
         )
         Text(
             text = label,
-            color = if (isSelected) Color.Black else Color.White.copy(alpha = 0.8f),
+            color = if (isSelected) Color.White else SoftInk,
             fontSize = 11.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
         )

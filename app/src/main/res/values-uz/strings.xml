@@ -147,7 +147,7 @@
     <string name="error_analyze_failed">Tanlangan sohani tahlil qilib bo\'lmadi.</string>
     <string name="error_general_gemini">Gemini AI orqali ekran qismini tahlil qilishda xatolik yuz berdi.</string>
     <string name="error_api_key_leaked">Gemini API kaliti sizib chiqqanligi sababli Google tomonidan bekor qilingan. Iltimos, AI Studio Secrets paneliga yangi GEMINI_API_KEY kiriting.</string>
-    <string name="error_api_key_invalid">Gemini API kaliti yaroqsiz yoki kiritilmagan. Iltimos, AI Studio Secrets panelini tekshiring.</string>
+    <string name="error_api_key_invalid">Gemini API kaliti yaroqsiz yoki kiritilmagan. Iltimos, Sozlamalar → Gemini API kaliti bo‘limini tekshiring.</string>
 
     <!-- Gemini Model Selection BottomSheet -->
     <string name="model_sheet_title">Gemini modelini tanlash</string>
@@ -162,4 +162,32 @@
     <string name="image_zoom_hint">Kattalashtirish uchun chimdilang • Surish uchun torting</string>
     <string name="btn_reset_zoom">Dastlabki holat</string>
     <string name="ai_responding_indicator">AI javob tayyorlamoqda...</string>
+
+    <!-- App updates -->
+    <string name="update_title">Yangi versiya mavjud</string>
+    <string name="update_message">Gidscreen %1$s tayyor. Ilovani yangilash uchun APK faylini yuklab oling.</string>
+    <string name="update_download">Yuklab olish</string>
+    <string name="update_later">Keyinroq</string>
+    <string name="update_open_error">Yuklab olish havolasini ochadigan ilova topilmadi.</string>
+    <string name="soft_title">Ekranni belgilang.</string>
+    <string name="soft_subtitle">Javobni oling.</string>
+    <string name="soft_start">Ekranni tanlash</string>
+    <string name="soft_hint">Suzuvchi tugma orqali ham boshlang</string>
+    <string name="soft_bubble">Suzuvchi tugma</string>
+    <string name="soft_home">Bosh sahifa</string>
+
+    <string name="gemini_key_title">Gemini API kaliti</string>
+    <string name="gemini_key_saved">Kalit telefonda saqlandi. Tekshirish uchun xabar yuboring.</string>
+    <string name="gemini_key_missing">Kalit kiritilmagan.</string>
+    <string name="gemini_key_help">Google AI Studio kalitingizni kiriting. U shu telefonda saqlanadi va AI so‘rovlari uchun Google’ga yuboriladi.</string>
+    <string name="gemini_key_edit">Kalit kiritish yoki almashtirish</string>
+    <string name="gemini_key_remove">Kalitni o‘chirish</string>
+    <string name="gemini_key_save">Saqlash</string>
+    <string name="gemini_key_error">Saqlanmadi. Kalitni tekshirib, qayta urinib ko‘ring.</string>
+    <string name="settings_overlay_short">Boshqa ilovalar ustida ko‘rsatish</string>
+    <string name="settings_notifications_short">Bildirishnomalar</string>
+    <string name="settings_allowed">Ruxsat berilgan</string>
+    <string name="settings_not_allowed">Ruxsat berilmagan</string>
+    <string name="settings_key_saved_short">Saqlangan</string>
+    <string name="settings_key_missing_short">Kiritilmagan</string>
 </resources>

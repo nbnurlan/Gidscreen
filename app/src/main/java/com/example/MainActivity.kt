@@ -1,5 +1,7 @@
 package com.example
 
+import com.example.ui.theme.SoftInk
+import com.example.ui.theme.SoftBackground
 import android.Manifest
 import android.app.Activity
 import android.content.Context
@@ -52,6 +54,11 @@ import androidx.compose.material.icons.filled.Functions
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material.icons.filled.Home
+import com.example.ui.SoftHomeHero
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
@@ -98,9 +105,9 @@ import com.example.ui.LassoSelectionContent
 import com.example.ui.MasterServiceCard
 import com.example.ui.PermissionStatusItem
 import com.example.ui.SettingsContent
-import com.example.ui.theme.CyanGlow
-import com.example.ui.theme.DarkBorder
-import com.example.ui.theme.DarkSurface
+import com.example.ui.theme.SoftPrimary as CyanGlow
+import com.example.ui.theme.SoftBorder as DarkBorder
+import com.example.ui.theme.SoftSurface as DarkSurface
 import com.example.ui.theme.MyApplicationTheme
 import com.example.util.LocaleHelper
 import kotlinx.coroutines.launch
@@ -123,14 +130,18 @@ class MainActivity : AppCompatActivity() {
             WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
             WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED
         )
-        enableEdgeToEdge()
+        enableEdgeToEdge(
+            statusBarStyle = androidx.activity.SystemBarStyle.light(AndroidColor.TRANSPARENT, AndroidColor.TRANSPARENT),
+            navigationBarStyle = androidx.activity.SystemBarStyle.light(AndroidColor.TRANSPARENT, AndroidColor.TRANSPARENT)
+        )
 
         if (intent?.getBooleanExtra(EXTRA_REQUEST_CAPTURE, false) == true) {
             requestCaptureTrigger.value = true
         }
 
         setContent {
-            MyApplicationTheme {
+            MyApplicationTheme(darkTheme = false, dynamicColor = false) {
+                com.example.ui.AppUpdatePrompt()
                 MainAppScreen(
                     requestCaptureInitially = requestCaptureTrigger.value,
                     onRequestCaptureHandled = { requestCaptureTrigger.value = false }
@@ -259,7 +270,7 @@ fun MainAppScreen(
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                     contentDescription = stringResource(R.string.btn_back),
-                                    tint = Color.White
+                                    tint = SoftInk
                                 )
                             }
                         }
@@ -270,7 +281,7 @@ fun MainAppScreen(
                                 text = stringResource(R.string.settings_title),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 18.sp,
-                                color = Color.White
+                                color = SoftInk
                             )
                         } else {
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -305,19 +316,19 @@ fun MainAppScreen(
                                 Icon(
                                     imageVector = Icons.Default.Settings,
                                     contentDescription = stringResource(R.string.settings_title),
-                                    tint = Color.White.copy(alpha = 0.9f)
+                                    tint = SoftInk.copy(alpha = 0.9f)
                                 )
                             }
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = DarkSurface,
-                        titleContentColor = Color.White
+                        titleContentColor = SoftInk
                     ),
-                    modifier = Modifier.shadow(4.dp)
+                    modifier = Modifier.shadow(0.dp)
                 )
             },
-            containerColor = Color(0xFF070B14)
+            containerColor = SoftBackground
         ) { paddingValues ->
             Box(
                 modifier = Modifier
@@ -360,6 +371,8 @@ fun MainAppScreen(
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
+                        item { SoftHomeHero() }
+
                         // Master Service Card
                         item {
                             MasterServiceCard(
@@ -390,14 +403,6 @@ fun MainAppScreen(
                             )
                         }
 
-                        // Gemini AI Model & API Status Card
-                        item {
-                            GeminiApiStatusCard(
-                                onOpenModelSelection = {
-                                    showModelBottomSheet = true
-                                }
-                            )
-                        }
                     }
                 }
             }
@@ -445,6 +450,7 @@ fun MainAppScreen(
                 },
                 onDismiss = {
                     showInAppLasso = false
+                    showInAppChatDialog = inAppChatMessages.isNotEmpty()
                 }
             )
         }
@@ -469,25 +475,34 @@ fun MainAppScreen(
                     analysisState = inAppAnalysisState,
                     chatMessages = inAppChatMessages,
                     onSendFollowUp = { question ->
-                        inAppChatMessages.add(ChatMessage(sender = MessageSender.USER, text = question))
-                        coroutineScope.launch {
-                            val res = GeminiService.continueChat(
-                                inAppChatMessages.dropLast(1),
-                                question,
-                                inAppThumbnail
-                            )
-                            res.onSuccess { ans ->
-                                inAppChatMessages.add(ChatMessage(sender = MessageSender.AI, text = ans))
-                            }.onFailure { err ->
-                                inAppChatMessages.add(
-                                    ChatMessage(sender = MessageSender.SYSTEM, text = "Error: ${err.message}")
-                                )
+                        if (question.isNotBlank() && inAppAnalysisState !is AnalysisState.Analyzing &&
+                            inAppAnalysisState !is AnalysisState.Capturing) {
+                            val previousState = inAppAnalysisState
+                            val history = inAppChatMessages.toList()
+                            inAppAnalysisState = AnalysisState.Analyzing(inAppThumbnail)
+                            inAppChatMessages.add(ChatMessage(sender = MessageSender.USER, text = question))
+                            coroutineScope.launch {
+                                try {
+                                    val res = GeminiService.continueChat(history, question, inAppThumbnail)
+                                    res.onSuccess { ans ->
+                                        inAppChatMessages.add(ChatMessage(sender = MessageSender.AI, text = ans))
+                                    }.onFailure { err ->
+                                        inAppChatMessages.add(ChatMessage(
+                                            sender = MessageSender.SYSTEM, text = "Error: ${err.message}"
+                                        ))
+                                    }
+                                } finally {
+                                    inAppAnalysisState = previousState
+                                }
                             }
                         }
                     },
                     onNewSelectionRequested = {
-                        showInAppChatDialog = false
-                        showInAppLasso = true
+                        if (inAppAnalysisState !is AnalysisState.Analyzing &&
+                            inAppAnalysisState !is AnalysisState.Capturing) {
+                            showInAppChatDialog = false
+                            showInAppLasso = true
+                        }
                     },
                     onRetry = {
                         inAppThumbnail?.let { bmp ->
@@ -498,6 +513,11 @@ fun MainAppScreen(
                                     inAppAnalysisState = AnalysisState.Success(exp, bmp)
                                     inAppChatMessages.clear()
                                     inAppChatMessages.add(ChatMessage(sender = MessageSender.AI, text = exp))
+                                }.onFailure { error ->
+                                    inAppAnalysisState = AnalysisState.Error(
+                                        message = error.message ?: "Failed to analyze selection.",
+                                        thumbnail = bmp
+                                    )
                                 }
                             }
                         }

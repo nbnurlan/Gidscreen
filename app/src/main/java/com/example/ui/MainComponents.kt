@@ -52,15 +52,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
+import com.example.ui.theme.SoftInk
+import com.example.ui.theme.SoftBackground
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import com.example.network.GeminiModelManager
 import com.example.network.GeminiService
-import com.example.ui.theme.CyanGlow
-import com.example.ui.theme.DarkBorder
-import com.example.ui.theme.DarkSurface
-import com.example.ui.theme.DarkSurfaceVariant
-import com.example.ui.theme.PurpleNeon
+import com.example.ui.theme.SoftPrimary as CyanGlow
+import com.example.ui.theme.SoftBorder as DarkBorder
+import com.example.ui.theme.SoftSurface as DarkSurface
+import com.example.ui.theme.SoftSurfaceVariant as DarkSurfaceVariant
+import com.example.ui.theme.SoftPrimary as PurpleNeon
 import com.example.util.AppLanguage
 import com.example.util.LocaleHelper
 
@@ -71,131 +73,40 @@ fun MasterServiceCard(
     hasCaptureToken: Boolean,
     onToggleService: (Boolean) -> Unit
 ) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(
-            width = 1.5.dp,
-            brush = if (isServiceActive) {
-                Brush.horizontalGradient(listOf(CyanGlow, PurpleNeon))
-            } else {
-                Brush.horizontalGradient(listOf(DarkBorder, DarkBorder))
-            }
-        ),
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(8.dp, RoundedCornerShape(16.dp))
-    ) {
-        Column(modifier = Modifier.padding(18.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (isServiceActive) CyanGlow.copy(alpha = 0.2f)
-                                else Color.White.copy(alpha = 0.05f)
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = if (isServiceActive) Icons.AutoMirrored.Filled.ScreenShare else Icons.Default.CropFree,
-                            contentDescription = null,
-                            tint = if (isServiceActive) CyanGlow else Color.White.copy(alpha = 0.6f),
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(
-                            text = stringResource(R.string.service_title),
-                            color = Color.White,
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = if (isServiceActive) {
-                                stringResource(R.string.service_status_running)
-                            } else {
-                                stringResource(R.string.service_status_ready)
-                            },
-                            color = if (isServiceActive) CyanGlow else Color.White.copy(alpha = 0.6f),
-                            fontSize = 12.sp
-                        )
-                    }
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Button(
+            onClick = { onToggleService(!isServiceActive) },
+            colors = ButtonDefaults.buttonColors(containerColor = CyanGlow, contentColor = Color.White),
+            shape = RoundedCornerShape(22.dp),
+            modifier = Modifier.fillMaxWidth().height(60.dp)
+                .testTag(if (isServiceActive) "stop_service_button" else "start_service_button")
+        ) {
+            Icon(if (isServiceActive) Icons.Default.Stop else Icons.Default.CropFree, null)
+            Spacer(Modifier.width(10.dp))
+            Text(stringResource(if (isServiceActive) R.string.btn_stop_service else R.string.soft_start),
+                fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+        }
+        Text(stringResource(R.string.soft_hint), color = SoftInk.copy(alpha = 0.7f),
+            fontSize = 13.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
+        Surface(color = DarkSurface, shape = RoundedCornerShape(24.dp),
+            border = BorderStroke(1.dp, DarkBorder)) {
+            Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
+                Surface(color = DarkSurfaceVariant, shape = RoundedCornerShape(16.dp)) {
+                    Icon(Icons.AutoMirrored.Filled.ScreenShare, null, tint = CyanGlow,
+                        modifier = Modifier.padding(12.dp).size(24.dp))
                 }
-
-                Switch(
-                    checked = isServiceActive,
-                    onCheckedChange = { onToggleService(it) },
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = Color.Black,
-                        checkedTrackColor = CyanGlow,
-                        uncheckedThumbColor = Color.White.copy(alpha = 0.7f),
-                        uncheckedTrackColor = DarkSurfaceVariant
-                    ),
-                    modifier = Modifier.testTag("service_toggle_switch")
-                )
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                if (!isServiceActive) {
-                    Button(
-                        onClick = { onToggleService(true) },
-                        colors = ButtonDefaults.buttonColors(containerColor = CyanGlow),
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(44.dp)
-                            .testTag("start_service_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = null,
-                            tint = Color.Black
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = stringResource(R.string.btn_start_service),
-                            color = Color.Black,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
-                        )
-                    }
-                } else {
-                    OutlinedButton(
-                        onClick = { onToggleService(false) },
-                        shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFEF4444)),
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(44.dp)
-                            .testTag("stop_service_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Stop,
-                            contentDescription = null,
-                            tint = Color(0xFFEF4444)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = stringResource(R.string.btn_stop_service),
-                            color = Color(0xFFEF4444),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
-                        )
-                    }
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(stringResource(R.string.soft_bubble), color = SoftInk,
+                        fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(if (isServiceActive) R.string.service_status_running else R.string.service_status_ready),
+                        color = SoftInk.copy(alpha = 0.7f), fontSize = 12.sp)
                 }
+                Switch(checked = isServiceActive, onCheckedChange = onToggleService,
+                    colors = SwitchDefaults.colors(checkedThumbColor = Color.White,
+                        checkedTrackColor = CyanGlow, uncheckedThumbColor = CyanGlow,
+                        uncheckedTrackColor = DarkSurfaceVariant, uncheckedBorderColor = DarkBorder),
+                    modifier = Modifier.testTag("service_toggle_switch"))
             }
         }
     }
@@ -210,7 +121,7 @@ fun PermissionStatusItem(
 ) {
     Surface(
         color = DarkSurface,
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(20.dp),
         border = BorderStroke(1.dp, DarkBorder),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -226,13 +137,13 @@ fun PermissionStatusItem(
                     Icon(
                         imageVector = if (isGranted) Icons.Default.CheckCircle else Icons.Default.ErrorOutline,
                         contentDescription = null,
-                        tint = if (isGranted) Color(0xFF10B981) else Color(0xFFF59E0B),
+                        tint = if (isGranted) Color(0xFF197653) else Color(0xFF986000),
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = title,
-                        color = Color.White,
+                        color = SoftInk,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -240,7 +151,7 @@ fun PermissionStatusItem(
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = subtitle,
-                    color = Color.White.copy(alpha = 0.6f),
+                    color = SoftInk.copy(alpha = 0.72f),
                     fontSize = 11.sp
                 )
             }
@@ -264,7 +175,7 @@ fun PermissionStatusItem(
             } else {
                 Text(
                     text = stringResource(R.string.status_active),
-                    color = Color(0xFF10B981),
+                    color = Color(0xFF197653),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(start = 8.dp)
@@ -284,7 +195,7 @@ fun GeminiApiStatusCard(
 
     Surface(
         color = DarkSurface,
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(20.dp),
         border = BorderStroke(1.dp, DarkBorder),
         modifier = Modifier
             .fillMaxWidth()
@@ -309,7 +220,7 @@ fun GeminiApiStatusCard(
                 Column {
                     Text(
                         text = stringResource(R.string.api_card_title),
-                        color = Color.White,
+                        color = SoftInk,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -319,7 +230,7 @@ fun GeminiApiStatusCard(
                         } else {
                             stringResource(R.string.api_card_pending)
                         },
-                        color = if (isConfigured) Color(0xFF10B981) else Color(0xFFF59E0B),
+                        color = if (isConfigured) Color(0xFF197653) else Color(0xFF986000),
                         fontSize = 11.sp
                     )
                 }
@@ -346,15 +257,15 @@ fun GeminiApiStatusCard(
 @Composable
 fun QuickGuideCard() {
     Surface(
-        color = Color(0xFF101726),
-        shape = RoundedCornerShape(12.dp),
+        color = SoftBackground,
+        shape = RoundedCornerShape(20.dp),
         border = BorderStroke(1.dp, DarkBorder),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Text(
                 text = stringResource(R.string.guide_title),
-                color = Color.White,
+                color = SoftInk,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -405,8 +316,8 @@ private fun GuideStepItem(step: String, title: String, desc: String) {
         }
         Spacer(modifier = Modifier.width(8.dp))
         Column {
-            Text(text = title, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-            Text(text = desc, color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp)
+            Text(text = title, color = SoftInk, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+            Text(text = desc, color = SoftInk.copy(alpha = 0.72f), fontSize = 11.sp)
         }
     }
 }
@@ -420,7 +331,7 @@ fun SampleContentCard(
 ) {
     Surface(
         color = DarkSurface,
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(20.dp),
         border = BorderStroke(1.dp, DarkBorder),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -433,7 +344,7 @@ fun SampleContentCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(imageVector = icon, contentDescription = null, tint = CyanGlow, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = title, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    Text(text = title, color = SoftInk, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                 }
 
                 FilledTonalButton(
@@ -457,13 +368,13 @@ fun SampleContentCard(
             Spacer(modifier = Modifier.height(10.dp))
 
             Surface(
-                color = Color(0xFF0A0F1D),
+                color = SoftBackground,
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
                     text = content,
-                    color = Color(0xFFE2E8F0),
+                    color = SoftInk,
                     fontSize = 12.sp,
                     fontFamily = FontFamily.Monospace,
                     modifier = Modifier.padding(10.dp)

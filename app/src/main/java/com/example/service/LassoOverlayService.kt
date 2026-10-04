@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.content.pm.ServiceInfo
 import android.graphics.Bitmap
 import android.graphics.Path
@@ -43,6 +44,7 @@ import com.example.ui.theme.MyApplicationTheme
 import com.example.util.LocaleHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
@@ -69,6 +71,41 @@ class LassoOverlayService : Service() {
     // Overlay Views
     private var bubbleView: ComposeView? = null
     private var bubbleParams: WindowManager.LayoutParams? = null
+    private val bubbleDocked = mutableStateOf(false)
+    private val bubbleDockRight = mutableStateOf(false)
+    private var bubbleIdleJob: Job? = null
+
+    private fun scheduleBubbleDock() {
+        bubbleIdleJob?.cancel()
+        if (bubbleParams == null) return
+        bubbleIdleJob = serviceScope.launch {
+            delay(3000)
+            val view = bubbleView ?: return@launch
+            if (view.visibility != View.VISIBLE) return@launch
+            val params = bubbleParams ?: return@launch
+            val dm = resources.displayMetrics
+            bubbleDockRight.value = params.x + view.width / 2 >= dm.widthPixels / 2
+            bubbleDocked.value = true
+            params.width = (24 * dm.density).toInt()
+            params.x = if (bubbleDockRight.value) dm.widthPixels - params.width else 0
+            runCatching { windowManager.updateViewLayout(view, params) }
+        }
+    }
+
+    private fun expandBubble() {
+        val params = bubbleParams ?: return
+        val view = bubbleView ?: return
+        val dm = resources.displayMetrics
+        params.width = (64 * dm.density).toInt()
+        params.x = if (bubbleDockRight.value) (dm.widthPixels - params.width).coerceAtLeast(0) else 0
+        bubbleDocked.value = false
+        runCatching { windowManager.updateViewLayout(view, params) }
+    }
+
+    private fun restoreFloatingBubble() {
+        bubbleView?.visibility = View.VISIBLE
+        scheduleBubbleDock()
+    }
 
     private var selectionView: ComposeView? = null
     private var selectionParams: WindowManager.LayoutParams? = null
@@ -185,7 +222,7 @@ class LassoOverlayService : Service() {
                     WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
             PixelFormat.TRANSLUCENT
         ).apply {
-            gravity = Gravity.TOP or Gravity.START
+            gravity = Gravity.TOP or Gravity.LEFT
             x = 36
             y = screenHeight / 3
         }
@@ -195,8 +232,8 @@ class LassoOverlayService : Service() {
         val view = ComposeView(themedContext).apply {
             bubbleLifecycleOwner.attachToView(this)
             setContent {
-                MyApplicationTheme {
-                    FloatingBubbleContent()
+                MyApplicationTheme(darkTheme = false, dynamicColor = false) {
+                    FloatingBubbleContent(docked = bubbleDocked.value, dockRight = bubbleDockRight.value)
                 }
             }
         }
@@ -209,11 +246,15 @@ class LassoOverlayService : Service() {
         var isDragging = false
         val touchSlop = ViewConfiguration.get(this).scaledTouchSlop
         var touchStartTime = 0L
+        var startedDocked = false
 
         view.setOnTouchListener { v, event ->
             val currentParams = bubbleParams ?: return@setOnTouchListener false
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
+                    bubbleIdleJob?.cancel()
+                    startedDocked = bubbleDocked.value
+                    if (startedDocked) expandBubble()
                     initialX = currentParams.x
                     initialY = currentParams.y
                     initialTouchX = event.rawX
@@ -257,7 +298,7 @@ class LassoOverlayService : Service() {
                     if (!isDragging && dx <= touchSlop && dy <= touchSlop && duration < 400) {
                         // Bir marta oddiy bosilganda (click) avvalgi amali (ekranni belgilash) chaqiriladi
                         v.performClick()
-                        showSelectionOverlay()
+                        if (startedDocked) scheduleBubbleDock() else showSelectionOverlay()
                     } else {
                         // Siljitish tugagach qo'yilgan joyda saqlanadi
                         val dm = resources.displayMetrics
@@ -275,6 +316,11 @@ class LassoOverlayService : Service() {
                             e.printStackTrace()
                         }
                     }
+                    scheduleBubbleDock()
+                    true
+                }
+                MotionEvent.ACTION_CANCEL -> {
+                    scheduleBubbleDock()
                     true
                 }
                 else -> false
@@ -285,12 +331,14 @@ class LassoOverlayService : Service() {
         try {
             windowManager.addView(view, params)
             bubbleView = view
+            scheduleBubbleDock()
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
     private fun hideFloatingBubble() {
+        bubbleIdleJob?.cancel()
         bubbleView?.let {
             try {
                 windowManager.removeView(it)
@@ -305,7 +353,8 @@ class LassoOverlayService : Service() {
     // Feature 2: Fullscreen Custom Freehand/Lasso Screen Selection
     // -------------------------------------------------------------
     private fun showSelectionOverlay() {
-        if (selectionView != null) return
+        if (selectionView != null || analysisState.value is AnalysisState.Analyzing ||
+            analysisState.value is AnalysisState.Capturing) return
 
         // Hide floating bubble while selecting
         bubbleView?.visibility = View.GONE
@@ -332,7 +381,7 @@ class LassoOverlayService : Service() {
         val view = ComposeView(themedContext).apply {
             selectionLifecycleOwner.attachToView(this)
             setContent {
-                MyApplicationTheme {
+                MyApplicationTheme(darkTheme = false, dynamicColor = false) {
                     LassoSelectionContent(
                         onSelectionConfirmed = { path, bounds ->
                             onLassoSelected(path, bounds)
@@ -351,7 +400,7 @@ class LassoOverlayService : Service() {
             selectionView = view
         } catch (e: Exception) {
             e.printStackTrace()
-            bubbleView?.visibility = View.VISIBLE
+            restoreFloatingBubble()
         }
     }
 
@@ -364,8 +413,12 @@ class LassoOverlayService : Service() {
             }
             selectionView = null
         }
-        if (restoreBubble && chatView == null) {
-            bubbleView?.visibility = View.VISIBLE
+        if (restoreBubble) {
+            if (chatView != null) {
+                chatView?.visibility = View.VISIBLE
+            } else {
+                restoreFloatingBubble()
+            }
         }
     }
 
@@ -550,7 +603,7 @@ class LassoOverlayService : Service() {
         val view = ComposeView(themedContext).apply {
             chatLifecycleOwner.attachToView(this)
             setContent {
-                MyApplicationTheme {
+                MyApplicationTheme(darkTheme = false, dynamicColor = false) {
                     FloatingChatDialogContent(
                         analysisState = analysisState.value,
                         chatMessages = chatMessages,
@@ -558,7 +611,6 @@ class LassoOverlayService : Service() {
                             handleFollowUp(question)
                         },
                         onNewSelectionRequested = {
-                            chatView?.visibility = View.GONE
                             showSelectionOverlay()
                         },
                         onRetry = {
@@ -572,7 +624,7 @@ class LassoOverlayService : Service() {
                         },
                         onClose = {
                             hideFloatingChatDialog()
-                            bubbleView?.visibility = View.VISIBLE
+                            restoreFloatingBubble()
                         },
                         onDragDelta = { dx, dy ->
                             val cp = chatParams ?: return@FloatingChatDialogContent
@@ -593,9 +645,12 @@ class LassoOverlayService : Service() {
                             } catch (_: Exception) {}
                         },
                         onClearChat = {
-                            chatMessages.clear()
-                            currentBitmap = null
-                            analysisState.value = AnalysisState.Idle
+                            if (analysisState.value !is AnalysisState.Analyzing &&
+                                analysisState.value !is AnalysisState.Capturing) {
+                                chatMessages.clear()
+                                currentBitmap = null
+                                analysisState.value = AnalysisState.Idle
+                            }
                         }
                     )
                 }
@@ -612,32 +667,39 @@ class LassoOverlayService : Service() {
     }
 
     private fun handleFollowUp(question: String) {
-        chatMessages.add(
-            ChatMessage(sender = MessageSender.USER, text = question)
-        )
+        val text = question.trim()
+        if (text.isEmpty() || analysisState.value is AnalysisState.Analyzing ||
+            analysisState.value is AnalysisState.Capturing) return
+
+        // Reserve the request synchronously, before another tap can enqueue work.
+        val previousState = analysisState.value
+        val history = chatMessages.toList()
+        analysisState.value = AnalysisState.Analyzing(currentBitmap)
+        chatMessages.add(ChatMessage(sender = MessageSender.USER, text = text))
 
         serviceScope.launch {
-            val result = GeminiService.continueChat(
-                history = chatMessages.dropLast(1),
-                newQuestion = question,
-                bitmap = null
-            )
-            result.onSuccess { answer ->
-                chatMessages.add(
-                    ChatMessage(sender = MessageSender.AI, text = answer)
+            try {
+                val result = GeminiService.continueChat(
+                    history = history,
+                    newQuestion = text,
+                    bitmap = null
                 )
-            }.onFailure { error ->
-                chatMessages.add(
-                    ChatMessage(
+                result.onSuccess { answer ->
+                    chatMessages.add(ChatMessage(sender = MessageSender.AI, text = answer))
+                }.onFailure { error ->
+                    chatMessages.add(ChatMessage(
                         sender = MessageSender.SYSTEM,
                         text = "Error: ${error.message}"
-                    )
-                )
+                    ))
+                }
+            } finally {
+                analysisState.value = previousState
             }
         }
     }
 
     private fun retryAnalysis(bitmap: Bitmap) {
+        if (analysisState.value is AnalysisState.Analyzing) return
         analysisState.value = AnalysisState.Analyzing(bitmap)
         serviceScope.launch {
             val userPrompt = chatMessages.lastOrNull { it.sender == MessageSender.USER }?.text
@@ -674,7 +736,20 @@ class LassoOverlayService : Service() {
             chatView = null
         }
         chatLifecycleOwner.onStop()
-        bubbleView?.visibility = View.VISIBLE
+        restoreFloatingBubble()
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        val params = bubbleParams ?: return
+        val view = bubbleView ?: return
+        bubbleIdleJob?.cancel()
+        if (bubbleDocked.value) expandBubble()
+        val dm = resources.displayMetrics
+        params.x = params.x.coerceIn(0, (dm.widthPixels - (64 * dm.density).toInt()).coerceAtLeast(0))
+        params.y = params.y.coerceIn(0, (dm.heightPixels - (64 * dm.density).toInt()).coerceAtLeast(0))
+        runCatching { windowManager.updateViewLayout(view, params) }
+        scheduleBubbleDock()
     }
 
     override fun onDestroy() {
