@@ -117,3 +117,19 @@ idle timer. Rotation clamps it back inside the screen.
 Device checks: idle on both sides, tap to expand without starting selection, tap
 again to select, drag/cancel drag, close chat, cancel selection, rotate while
 docked, stop service, and verify the new launcher icon.
+
+
+## Automatic update distribution
+
+Starting with 1.2.2, pushes to main/master build and test the production APK,
+verify its persistent signing certificate, and publish a GitHub release when
+that version does not already exist. Increase both Android version fields for
+each new release. Existing release assets are never overwritten. Branch and
+PR builds do not publish releases.
+
+Install Gidscreen once from the release APK. It checks update.json automatically
+on app startup and offers newer versions. The download opens in the browser;
+Android still requires the user to approve APK installation. Gidscreen Test has
+a separate application ID and intentionally does not install production updates.
+Old production installs signed with a different certificate cannot upgrade in
+place; retain their data until a migration is agreed.
