@@ -3,6 +3,7 @@ package com.example.ui
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
+import androidx.compose.material.icons.filled.Key
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -20,27 +21,20 @@ fun GeminiKeySettingsCard() {
     // Deliberately not rememberSaveable: secrets must not enter saved-instance state.
     var input by remember { mutableStateOf("") }
     var failed by remember { mutableStateOf(false) }
-    Card(modifier = Modifier.fillMaxWidth().testTag("gemini_key_card")) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(stringResource(R.string.gemini_key_title), style = MaterialTheme.typography.titleMedium)
-            Text(stringResource(if (configured) R.string.gemini_key_saved else R.string.gemini_key_missing))
-            Text(stringResource(R.string.gemini_key_help), style = MaterialTheme.typography.bodySmall)
-            Row {
-                TextButton(onClick = { input = ""; failed = false; editing = true }) {
-                    Text(stringResource(R.string.gemini_key_edit))
-                }
-                if (configured) TextButton(onClick = { GeminiKeyStore.clear() }) {
-                    Text(stringResource(R.string.gemini_key_remove))
-                }
-            }
-        }
-    }
+    SettingsRow(
+        icon = androidx.compose.material.icons.Icons.Default.Key,
+        title = stringResource(R.string.gemini_key_title),
+        subtitle = stringResource(if (configured) R.string.settings_key_saved_short else R.string.settings_key_missing_short),
+        onClick = { input = ""; failed = false; editing = true }
+    )
     if (editing) AlertDialog(
         properties = androidx.compose.ui.window.DialogProperties(securePolicy = androidx.compose.ui.window.SecureFlagPolicy.SecureOn),
         onDismissRequest = { input = ""; editing = false },
         title = { Text(stringResource(R.string.gemini_key_title)) },
         text = {
             Column {
+                Text(stringResource(R.string.gemini_key_help), style = MaterialTheme.typography.bodySmall)
+                Spacer(Modifier.height(12.dp))
                 OutlinedTextField(
                     value = input,
                     onValueChange = { input = it; failed = false },
@@ -51,6 +45,11 @@ fun GeminiKeySettingsCard() {
                     isError = failed,
                     modifier = Modifier.fillMaxWidth().testTag("gemini_key_input")
                 )
+                if (configured) TextButton(onClick = {
+                    GeminiKeyStore.clear()
+                    input = ""
+                    editing = false
+                }) { Text(stringResource(R.string.gemini_key_remove)) }
                 if (failed) Text(stringResource(R.string.gemini_key_error), color = MaterialTheme.colorScheme.error)
             }
         },

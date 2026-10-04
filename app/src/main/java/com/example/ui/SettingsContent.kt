@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
@@ -184,371 +185,69 @@ fun SettingsContent(
         )
     }
 
+    val modelId by GeminiModelManager.selectedModelId.collectAsState()
+    val model = GeminiModelManager.getSelectedModel()
     LazyColumn(
-        modifier = modifier
-            .fillMaxSize()
-            .testTag("settings_screen_list"),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier = modifier.fillMaxSize().testTag("settings_screen_list"),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
     ) {
-        // -------------------------------------------------------------
-        // Settings Header
-        // -------------------------------------------------------------
         item {
-            Column(modifier = Modifier.padding(bottom = 4.dp)) {
-                Text(
-                    text = stringResource(R.string.settings_title),
-                    color = SoftInk,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = stringResource(R.string.settings_subtitle),
-                    color = SoftInk.copy(alpha = 0.65f),
-                    fontSize = 12.sp
-                )
+            SettingsRow(Icons.Default.Language, stringResource(R.string.language_settings_title),
+                LocaleHelper.supportedLanguages.find { it.code == currentLang }?.nativeName ?: currentLang,
+                onClick = { showLanguageDialog = true })
+        }
+        item { GeminiKeySettingsCard() }
+        item {
+            // Reading modelId subscribes this row to model changes.
+            androidx.compose.runtime.key(modelId) {
+                SettingsRow(Icons.Default.AutoAwesome, stringResource(R.string.settings_section_ai),
+                    model.displayName, onClick = onOpenModelSelection)
             }
         }
-
-        // -------------------------------------------------------------
-        // 1. Language Settings Row ("Tillar")
-        // -------------------------------------------------------------
         item {
-            LanguageSettingsCard(
-                currentLanguage = currentLang,
-                onClick = { showLanguageDialog = true }
-            )
+            SettingsRow(Icons.Default.CropFree, stringResource(R.string.settings_overlay_short),
+                stringResource(if (hasOverlayPermission) R.string.settings_allowed else R.string.settings_not_allowed),
+                onClick = onOpenOverlayPermission)
         }
-
-        // -------------------------------------------------------------
-        // 2. Notification Permission (Android 13+)
-        // -------------------------------------------------------------
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             item {
-                Text(
-                    text = stringResource(R.string.section_permissions_title),
-                    color = SoftInk,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
-                )
-            }
-            item {
-                PermissionStatusItem(
-                    title = stringResource(R.string.perm_notification_title),
-                    subtitle = stringResource(R.string.perm_notification_desc),
-                    isGranted = hasNotificationPermission,
-                    onGrant = onOpenNotificationPermission
-                )
+                SettingsRow(Icons.Default.Security, stringResource(R.string.settings_notifications_short),
+                    stringResource(if (hasNotificationPermission) R.string.settings_allowed else R.string.settings_not_allowed),
+                    onClick = onOpenNotificationPermission)
             }
         }
-
-        // -------------------------------------------------------------
-        // 3. Gemini AI Model Configuration
-        // -------------------------------------------------------------
         item {
-            GeminiKeySettingsCard()
-        }
-        item {
-            AiModelSettingsCard(onOpenModelSelection = onOpenModelSelection)
-        }
-
-        // -------------------------------------------------------------
-        // 4. Floating Button & Edge Docking Guide
-        // -------------------------------------------------------------
-        item {
-            FloatingOverlaySettingsCard()
-        }
-
-        // -------------------------------------------------------------
-        // 5. App Info & Version
-        // -------------------------------------------------------------
-        item {
-            AppInfoCard()
+            SettingsRow(Icons.Default.Info, stringResource(R.string.settings_section_about),
+                "Gidscreen · ${com.example.BuildConfig.VERSION_NAME}")
         }
     }
 }
 
 @Composable
-fun LanguageSettingsCard(
-    currentLanguage: String,
-    onClick: () -> Unit
+internal fun SettingsRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: (() -> Unit)? = null
 ) {
-    val currentLangObj = LocaleHelper.supportedLanguages.find { it.code == currentLanguage }
-        ?: LocaleHelper.supportedLanguages.first()
-
-    Card(
-        colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        shape = RoundedCornerShape(24.dp),
-        border = BorderStroke(1.dp, DarkBorder),
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(6.dp, RoundedCornerShape(24.dp))
-            .clip(RoundedCornerShape(24.dp))
-            .clickable { onClick() }
-            .testTag("settings_language_card")
-    ) {
+    Column {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+            modifier = Modifier.fillMaxWidth()
+                .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+                .padding(horizontal = 8.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(CyanGlow.copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Language,
-                        contentDescription = null,
-                        tint = CyanGlow,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-                Column {
-                    Text(
-                        text = stringResource(R.string.language_settings_title),
-                        color = SoftInk,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = stringResource(R.string.language_settings_desc),
-                        color = SoftInk.copy(alpha = 0.72f),
-                        fontSize = 11.sp
-                    )
-                }
+            Icon(icon, contentDescription = null, tint = CyanGlow, modifier = Modifier.size(22.dp))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(title, color = SoftInk, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+                Text(subtitle, color = SoftInk.copy(alpha = 0.65f), fontSize = 13.sp)
             }
-
-            Surface(
-                color = CyanGlow.copy(alpha = 0.12f),
-                shape = RoundedCornerShape(20.dp),
-                border = BorderStroke(1.dp, CyanGlow.copy(alpha = 0.4f))
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Text(text = currentLangObj.flag, fontSize = 14.sp)
-                    Text(
-                        text = currentLangObj.nativeName,
-                        color = CyanGlow,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
+            if (onClick != null) {
+                Icon(androidx.compose.material.icons.Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null, tint = SoftInk.copy(alpha = 0.45f), modifier = Modifier.size(20.dp))
             }
         }
-    }
-}
-
-@Composable
-private fun AiModelSettingsCard(
-    onOpenModelSelection: () -> Unit = {}
-) {
-    val isConfigured by com.example.network.GeminiKeyStore.configured.collectAsState()
-    val activeModelId by GeminiModelManager.selectedModelId.collectAsState()
-    val currentModel = GeminiModelManager.getSelectedModel()
-
-    Card(
-        colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        shape = RoundedCornerShape(24.dp),
-        border = BorderStroke(1.dp, DarkBorder),
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(4.dp, RoundedCornerShape(24.dp))
-            .clickable(onClick = onOpenModelSelection)
-            .testTag("ai_model_settings_card")
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(38.dp)
-                            .clip(CircleShape)
-                            .background(PurpleNeon.copy(alpha = 0.15f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.AutoAwesome,
-                            contentDescription = null,
-                            tint = PurpleNeon,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                    Column {
-                        Text(
-                            text = stringResource(R.string.settings_section_ai),
-                            color = SoftInk,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = if (isConfigured) stringResource(R.string.api_card_ready) else stringResource(R.string.api_card_pending),
-                            color = if (isConfigured) Color(0xFF197653) else Color(0xFF986000),
-                            fontSize = 11.sp
-                        )
-                    }
-                }
-
-                Surface(
-                    color = PurpleNeon.copy(alpha = 0.15f),
-                    shape = RoundedCornerShape(8.dp),
-                    border = BorderStroke(1.dp, PurpleNeon.copy(alpha = 0.3f))
-                ) {
-                    Text(
-                        text = currentModel.displayName,
-                        color = PurpleNeon,
-                        fontSize = 12.sp,
-                        fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Text(
-                text = currentModel.description.ifBlank { stringResource(R.string.settings_model_desc) },
-                color = SoftInk.copy(alpha = 0.7f),
-                fontSize = 12.sp,
-                lineHeight = 17.sp
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                Surface(
-                    color = CyanGlow.copy(alpha = 0.08f),
-                    shape = RoundedCornerShape(8.dp),
-                    border = BorderStroke(1.dp, CyanGlow.copy(alpha = 0.3f)),
-                    modifier = Modifier.clickable(onClick = onOpenModelSelection)
-                ) {
-                    Text(
-                        text = stringResource(R.string.btn_change_model),
-                        color = CyanGlow,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun FloatingOverlaySettingsCard() {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        shape = RoundedCornerShape(24.dp),
-        border = BorderStroke(1.dp, DarkBorder),
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(4.dp, RoundedCornerShape(24.dp))
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(38.dp)
-                        .clip(CircleShape)
-                        .background(CyanGlow.copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CropFree,
-                        contentDescription = null,
-                        tint = CyanGlow,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-                Column {
-                    Text(
-                        text = stringResource(R.string.settings_section_overlay),
-                        color = SoftInk,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = stringResource(R.string.settings_overlay_tuck_info),
-                        color = SoftInk.copy(alpha = 0.72f),
-                        fontSize = 11.sp,
-                        lineHeight = 16.sp
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun AppInfoCard() {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        shape = RoundedCornerShape(24.dp),
-        border = BorderStroke(1.dp, DarkBorder),
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(4.dp, RoundedCornerShape(24.dp))
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(38.dp)
-                    .clip(CircleShape)
-                    .background(SoftInk.copy(alpha = 0.08f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Info,
-                    contentDescription = null,
-                    tint = SoftInk.copy(alpha = 0.7f),
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-            Column {
-                Text(
-                    text = stringResource(R.string.settings_section_about),
-                    color = SoftInk,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "v${com.example.BuildConfig.VERSION_NAME}",
-                    color = SoftInk.copy(alpha = 0.7f),
-                    fontSize = 11.sp
-                )
-            }
-        }
+        androidx.compose.material3.HorizontalDivider(color = DarkBorder.copy(alpha = 0.65f))
     }
 }

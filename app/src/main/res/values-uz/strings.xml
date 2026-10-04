@@ -184,4 +184,10 @@
     <string name="gemini_key_remove">Kalitni o‘chirish</string>
     <string name="gemini_key_save">Saqlash</string>
     <string name="gemini_key_error">Saqlanmadi. Kalitni tekshirib, qayta urinib ko‘ring.</string>
+    <string name="settings_overlay_short">Boshqa ilovalar ustida ko‘rsatish</string>
+    <string name="settings_notifications_short">Bildirishnomalar</string>
+    <string name="settings_allowed">Ruxsat berilgan</string>
+    <string name="settings_not_allowed">Ruxsat berilmagan</string>
+    <string name="settings_key_saved_short">Saqlangan</string>
+    <string name="settings_key_missing_short">Kiritilmagan</string>
 </resources>

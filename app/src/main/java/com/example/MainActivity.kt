@@ -328,24 +328,6 @@ fun MainAppScreen(
                     modifier = Modifier.shadow(0.dp)
                 )
             },
-            bottomBar = {
-                NavigationBar(containerColor = DarkSurface, tonalElevation = 0.dp) {
-                    NavigationBarItem(selected = !showSettingsScreen,
-                        onClick = { showSettingsScreen = false },
-                        icon = { Icon(Icons.Default.Home, null) },
-                        label = { Text(stringResource(R.string.soft_home)) },
-                        colors = NavigationBarItemDefaults.colors(selectedIconColor = CyanGlow,
-                            selectedTextColor = CyanGlow, indicatorColor = CyanGlow.copy(alpha = 0.1f),
-                            unselectedIconColor = SoftInk, unselectedTextColor = SoftInk))
-                    NavigationBarItem(selected = showSettingsScreen,
-                        onClick = { showSettingsScreen = true },
-                        icon = { Icon(Icons.Default.Settings, null) },
-                        label = { Text(stringResource(R.string.settings_title)) },
-                        colors = NavigationBarItemDefaults.colors(selectedIconColor = CyanGlow,
-                            selectedTextColor = CyanGlow, indicatorColor = CyanGlow.copy(alpha = 0.1f),
-                            unselectedIconColor = SoftInk, unselectedTextColor = SoftInk))
-                }
-            },
             containerColor = SoftBackground
         ) { paddingValues ->
             Box(
@@ -421,14 +403,6 @@ fun MainAppScreen(
                             )
                         }
 
-                        // Gemini AI Model & API Status Card
-                        item {
-                            GeminiApiStatusCard(
-                                onOpenModelSelection = {
-                                    showModelBottomSheet = true
-                                }
-                            )
-                        }
                     }
                 }
             }

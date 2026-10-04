@@ -186,4 +186,10 @@
     <string name="gemini_key_remove">Remove key</string>
     <string name="gemini_key_save">Save</string>
     <string name="gemini_key_error">Could not save. Check the key and try again.</string>
+    <string name="settings_overlay_short">Display over other apps</string>
+    <string name="settings_notifications_short">Notifications</string>
+    <string name="settings_allowed">Allowed</string>
+    <string name="settings_not_allowed">Not allowed</string>
+    <string name="settings_key_saved_short">Saved</string>
+    <string name="settings_key_missing_short">Not entered</string>
 </resources>

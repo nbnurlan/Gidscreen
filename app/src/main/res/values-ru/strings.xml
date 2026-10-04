@@ -184,4 +184,10 @@
     <string name="gemini_key_remove">Удалить ключ</string>
     <string name="gemini_key_save">Сохранить</string>
     <string name="gemini_key_error">Не удалось сохранить. Проверьте ключ и попробуйте ещё раз.</string>
+    <string name="settings_overlay_short">Поверх других приложений</string>
+    <string name="settings_notifications_short">Уведомления</string>
+    <string name="settings_allowed">Разрешено</string>
+    <string name="settings_not_allowed">Не разрешено</string>
+    <string name="settings_key_saved_short">Сохранён</string>
+    <string name="settings_key_missing_short">Не введён</string>
 </resources>
