@@ -232,7 +232,7 @@ class LassoOverlayService : Service() {
         val view = ComposeView(themedContext).apply {
             bubbleLifecycleOwner.attachToView(this)
             setContent {
-                MyApplicationTheme {
+                MyApplicationTheme(darkTheme = false, dynamicColor = false) {
                     FloatingBubbleContent(docked = bubbleDocked.value, dockRight = bubbleDockRight.value)
                 }
             }
@@ -381,7 +381,7 @@ class LassoOverlayService : Service() {
         val view = ComposeView(themedContext).apply {
             selectionLifecycleOwner.attachToView(this)
             setContent {
-                MyApplicationTheme {
+                MyApplicationTheme(darkTheme = false, dynamicColor = false) {
                     LassoSelectionContent(
                         onSelectionConfirmed = { path, bounds ->
                             onLassoSelected(path, bounds)
@@ -603,7 +603,7 @@ class LassoOverlayService : Service() {
         val view = ComposeView(themedContext).apply {
             chatLifecycleOwner.attachToView(this)
             setContent {
-                MyApplicationTheme {
+                MyApplicationTheme(darkTheme = false, dynamicColor = false) {
                     FloatingChatDialogContent(
                         analysisState = analysisState.value,
                         chatMessages = chatMessages,

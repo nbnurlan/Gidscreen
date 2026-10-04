@@ -91,12 +91,13 @@ import com.example.model.AnalysisState
 import com.example.model.ChatMessage
 import com.example.model.MessageSender
 import com.example.network.GeminiModelManager
-import com.example.ui.theme.CyanGlow
-import com.example.ui.theme.DarkBorder
-import com.example.ui.theme.DarkSurface
-import com.example.ui.theme.DarkSurfaceVariant
-import com.example.ui.theme.PurpleNeon
-import com.example.util.LocaleHelper
+import com.example.ui.theme.SoftBorder
+import com.example.ui.theme.SoftSurface
+import com.example.ui.theme.SoftSurfaceVariant
+import com.example.ui.theme.SoftPrimary
+import com.example.ui.theme.SoftInk
+import com.example.ui.theme.SoftMuted
+import com.example.ui.theme.SoftBackground
 
 @Composable
 fun FloatingChatDialogContent(
@@ -112,7 +113,6 @@ fun FloatingChatDialogContent(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val currentLang by LocaleHelper.currentLanguage.collectAsState()
 
     var isMinimized by remember { mutableStateOf(false) }
     var followUpInput by remember { mutableStateOf("") }
@@ -145,14 +145,14 @@ fun FloatingChatDialogContent(
     if (isMinimized) {
         // Minimized floating pill state
         Surface(
-            color = DarkSurface,
+            color = SoftSurface,
             shape = RoundedCornerShape(24.dp),
             shadowElevation = 12.dp,
             modifier = modifier
                 .shadow(12.dp, RoundedCornerShape(24.dp))
                 .border(
                     width = 1.5.dp,
-                    brush = Brush.linearGradient(listOf(CyanGlow, PurpleNeon)),
+                    brush = Brush.linearGradient(listOf(SoftPrimary, SoftPrimary)),
                     shape = RoundedCornerShape(24.dp)
                 )
                 .clip(RoundedCornerShape(24.dp))
@@ -173,7 +173,7 @@ fun FloatingChatDialogContent(
                 Icon(
                     imageVector = Icons.Default.AutoAwesome,
                     contentDescription = null,
-                    tint = CyanGlow,
+                    tint = SoftPrimary,
                     modifier = Modifier.size(20.dp)
                 )
                 Text(
@@ -182,7 +182,7 @@ fun FloatingChatDialogContent(
                     } else {
                         stringResource(R.string.chat_minimized_title)
                     },
-                    color = Color.White,
+                    color = SoftInk,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -193,7 +193,7 @@ fun FloatingChatDialogContent(
                     Icon(
                         imageVector = Icons.Default.ExpandMore,
                         contentDescription = stringResource(R.string.btn_expand),
-                        tint = Color.White,
+                        tint = SoftInk,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -204,7 +204,7 @@ fun FloatingChatDialogContent(
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = stringResource(R.string.btn_close),
-                        tint = Color.White.copy(alpha = 0.7f),
+                        tint = SoftInk.copy(alpha = 0.7f),
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -215,17 +215,17 @@ fun FloatingChatDialogContent(
 
     // Full Resizable & Draggable Floating Chat Window
     Surface(
-        color = DarkSurface,
-        shape = RoundedCornerShape(16.dp),
+        color = SoftSurface,
+        shape = RoundedCornerShape(24.dp),
         shadowElevation = 16.dp,
         modifier = modifier
-            .shadow(16.dp, RoundedCornerShape(16.dp))
+            .shadow(16.dp, RoundedCornerShape(24.dp))
             .border(
                 width = 1.5.dp,
-                brush = Brush.linearGradient(listOf(CyanGlow.copy(alpha = 0.8f), PurpleNeon.copy(alpha = 0.8f))),
-                shape = RoundedCornerShape(16.dp)
+                brush = Brush.linearGradient(listOf(SoftPrimary.copy(alpha = 0.8f), SoftPrimary.copy(alpha = 0.8f))),
+                shape = RoundedCornerShape(24.dp)
             )
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(24.dp))
             .testTag("floating_chat_dialog")
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -235,7 +235,7 @@ fun FloatingChatDialogContent(
                     .fillMaxWidth()
                     .background(
                         Brush.horizontalGradient(
-                            listOf(Color(0xFF0F172A), Color(0xFF1E1B4B))
+                            listOf(SoftSurfaceVariant, SoftSurfaceVariant)
                         )
                     )
                     .pointerInput(Unit) {
@@ -251,29 +251,26 @@ fun FloatingChatDialogContent(
                 Icon(
                     imageVector = Icons.Default.DragHandle,
                     contentDescription = stringResource(R.string.btn_drag_window),
-                    tint = Color.White.copy(alpha = 0.5f),
+                    tint = SoftInk.copy(alpha = 0.5f),
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Icon(
                     imageVector = Icons.Default.AutoAwesome,
                     contentDescription = null,
-                    tint = CyanGlow,
+                    tint = SoftPrimary,
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = stringResource(R.string.chat_title),
-                        color = Color.White,
+                        color = SoftInk,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold
                     )
                     CompactModelSelector()
                 }
-
-                // In-Overlay Compact Flag Language Selector Dropdown
-                CompactLanguageDropdown()
 
                 Spacer(modifier = Modifier.width(2.dp))
 
@@ -287,7 +284,7 @@ fun FloatingChatDialogContent(
                         Icon(
                             imageVector = Icons.Default.DeleteOutline,
                             contentDescription = stringResource(R.string.btn_clear_chat),
-                            tint = if (!isAnalyzing) Color.White.copy(alpha = 0.65f) else Color.White.copy(alpha = 0.25f),
+                            tint = if (!isAnalyzing) SoftInk.copy(alpha = 0.65f) else SoftInk.copy(alpha = 0.25f),
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -302,7 +299,7 @@ fun FloatingChatDialogContent(
                     Icon(
                         imageVector = Icons.Default.CropFree,
                         contentDescription = stringResource(R.string.btn_new_selection),
-                        tint = if (!isAnalyzing) CyanGlow else CyanGlow.copy(alpha = 0.3f),
+                        tint = if (!isAnalyzing) SoftPrimary else SoftPrimary.copy(alpha = 0.3f),
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -315,7 +312,7 @@ fun FloatingChatDialogContent(
                     Icon(
                         imageVector = Icons.Default.ExpandLess,
                         contentDescription = stringResource(R.string.btn_minimize),
-                        tint = Color.White.copy(alpha = 0.7f),
+                        tint = SoftInk.copy(alpha = 0.7f),
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -328,7 +325,7 @@ fun FloatingChatDialogContent(
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = stringResource(R.string.btn_close),
-                        tint = Color.White.copy(alpha = 0.7f),
+                        tint = SoftInk.copy(alpha = 0.7f),
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -339,7 +336,7 @@ fun FloatingChatDialogContent(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .background(Color(0xFF090D16))
+                    .background(SoftBackground)
             ) {
                 LazyColumn(
                     state = listState,
@@ -417,7 +414,7 @@ fun FloatingChatDialogContent(
 
             // Bottom Follow-up Input Bar
             Surface(
-                color = DarkSurfaceVariant,
+                color = SoftSurfaceVariant,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -433,18 +430,18 @@ fun FloatingChatDialogContent(
                         placeholder = {
                             Text(
                                 text = if (isAnalyzing) stringResource(R.string.input_placeholder_waiting) else stringResource(R.string.input_placeholder_follow_up),
-                                color = Color.White.copy(alpha = if (isAnalyzing) 0.25f else 0.4f),
+                                color = SoftInk.copy(alpha = if (isAnalyzing) 0.25f else 0.4f),
                                 fontSize = 12.sp
                             )
                         },
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = CyanGlow,
-                            unfocusedBorderColor = DarkBorder,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            disabledTextColor = Color.White.copy(alpha = 0.4f),
-                            disabledBorderColor = DarkBorder.copy(alpha = 0.5f),
-                            cursorColor = CyanGlow
+                            focusedBorderColor = SoftPrimary,
+                            unfocusedBorderColor = SoftBorder,
+                            focusedTextColor = SoftInk,
+                            unfocusedTextColor = SoftInk,
+                            disabledTextColor = SoftInk.copy(alpha = 0.4f),
+                            disabledBorderColor = SoftBorder.copy(alpha = 0.5f),
+                            cursorColor = SoftPrimary
                         ),
                         singleLine = true,
                         shape = RoundedCornerShape(20.dp),
@@ -469,7 +466,7 @@ fun FloatingChatDialogContent(
                             .size(40.dp)
                             .clip(CircleShape)
                             .background(
-                                if (canSend) CyanGlow else Color.White.copy(alpha = 0.1f)
+                                if (canSend) SoftPrimary else SoftInk.copy(alpha = 0.1f)
                             )
                             .testTag("chat_send_button")
                     ) {
@@ -477,13 +474,13 @@ fun FloatingChatDialogContent(
                             CircularProgressIndicator(
                                 modifier = Modifier.size(18.dp),
                                 strokeWidth = 2.dp,
-                                color = CyanGlow
+                                color = SoftPrimary
                             )
                         } else {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.Send,
                                 contentDescription = stringResource(R.string.btn_send),
-                                tint = if (canSend) Color.Black else Color.White.copy(alpha = 0.3f),
+                                tint = if (canSend) Color.White else SoftMuted.copy(alpha = 0.4f),
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -495,14 +492,14 @@ fun FloatingChatDialogContent(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFF0F172A))
+                    .background(SoftSurfaceVariant)
                     .padding(horizontal = 8.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = stringResource(R.string.footer_status_active),
-                    color = Color.White.copy(alpha = 0.4f),
+                    text = "Gidscreen",
+                    color = SoftInk.copy(alpha = 0.4f),
                     fontSize = 10.sp
                 )
 
@@ -521,7 +518,7 @@ fun FloatingChatDialogContent(
                 ) {
                     Text(
                         text = "◢",
-                        color = CyanGlow.copy(alpha = 0.8f),
+                        color = SoftPrimary.copy(alpha = 0.8f),
                         fontSize = 14.sp
                     )
                 }
@@ -544,9 +541,9 @@ private fun ScreenThumbnailCard(
     onImageClick: (() -> Unit)? = null
 ) {
     Surface(
-        color = Color(0xFF131B2E),
+        color = SoftSurfaceVariant,
         shape = RoundedCornerShape(10.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, DarkBorder),
+        border = androidx.compose.foundation.BorderStroke(1.dp, SoftBorder),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(8.dp)) {
@@ -559,13 +556,13 @@ private fun ScreenThumbnailCard(
                     Icon(
                         imageVector = Icons.Default.CropFree,
                         contentDescription = null,
-                        tint = CyanGlow,
+                        tint = SoftPrimary,
                         modifier = Modifier.size(14.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = stringResource(R.string.captured_screen_area),
-                        color = Color.White.copy(alpha = 0.8f),
+                        color = SoftInk.copy(alpha = 0.8f),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -574,14 +571,14 @@ private fun ScreenThumbnailCard(
                     if (onImageClick != null) {
                         Text(
                             text = stringResource(R.string.image_zoom_hint),
-                            color = CyanGlow.copy(alpha = 0.8f),
+                            color = SoftPrimary.copy(alpha = 0.8f),
                             fontSize = 10.sp,
                             modifier = Modifier.padding(end = 6.dp)
                         )
                     }
                     Text(
                         text = "${bitmap.width} × ${bitmap.height} px",
-                        color = CyanGlow,
+                        color = SoftPrimary,
                         fontSize = 10.sp,
                         fontFamily = FontFamily.Monospace
                     )
@@ -621,7 +618,7 @@ private fun ScreenThumbnailCard(
                             Icon(
                                 imageVector = Icons.Default.ZoomIn,
                                 contentDescription = null,
-                                tint = CyanGlow,
+                                tint = SoftPrimary,
                                 modifier = Modifier.size(12.dp)
                             )
                             Spacer(modifier = Modifier.width(3.dp))
@@ -641,9 +638,9 @@ private fun ScreenThumbnailCard(
 @Composable
 private fun AnalyzingStatusCard(rotation: Float) {
     Surface(
-        color = Color(0xFF131B2E),
+        color = SoftSurfaceVariant,
         shape = RoundedCornerShape(10.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, CyanGlow.copy(alpha = 0.4f)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, SoftPrimary.copy(alpha = 0.4f)),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
@@ -658,12 +655,12 @@ private fun AnalyzingStatusCard(rotation: Float) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(24.dp),
                     strokeWidth = 2.dp,
-                    color = CyanGlow
+                    color = SoftPrimary
                 )
                 Icon(
                     imageVector = Icons.Default.AutoAwesome,
                     contentDescription = null,
-                    tint = CyanGlow,
+                    tint = SoftPrimary,
                     modifier = Modifier
                         .size(14.dp)
                         .rotate(rotation)
@@ -672,13 +669,13 @@ private fun AnalyzingStatusCard(rotation: Float) {
             Column {
                 Text(
                     text = stringResource(R.string.analyzing_heading),
-                    color = Color.White,
+                    color = SoftInk,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
                     text = stringResource(R.string.analyzing_subheading),
-                    color = Color.White.copy(alpha = 0.6f),
+                    color = SoftInk.copy(alpha = 0.6f),
                     fontSize = 11.sp
                 )
             }
@@ -689,22 +686,22 @@ private fun AnalyzingStatusCard(rotation: Float) {
 @Composable
 private fun ErrorCard(message: String, onRetry: () -> Unit) {
     Surface(
-        color = Color(0xFF2C1517),
+        color = Color(0xFFFFF0EF),
         shape = RoundedCornerShape(10.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFEF4444)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFB3261E)),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(10.dp)) {
             Text(
                 text = stringResource(R.string.error_heading),
-                color = Color(0xFFEF4444),
+                color = Color(0xFFB3261E),
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = message,
-                color = Color.White.copy(alpha = 0.85f),
+                color = SoftInk.copy(alpha = 0.85f),
                 fontSize = 11.sp
             )
             Spacer(modifier = Modifier.height(6.dp))
@@ -716,7 +713,7 @@ private fun ErrorCard(message: String, onRetry: () -> Unit) {
                 Row(
                     modifier = Modifier
                         .clip(RoundedCornerShape(6.dp))
-                        .background(Color(0xFFEF4444).copy(alpha = 0.2f))
+                        .background(Color(0xFFB3261E).copy(alpha = 0.2f))
                         .clickable(onClick = onRetry)
                         .padding(horizontal = 10.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -724,13 +721,13 @@ private fun ErrorCard(message: String, onRetry: () -> Unit) {
                     Icon(
                         imageVector = Icons.Default.Refresh,
                         contentDescription = stringResource(R.string.btn_retry_analysis),
-                        tint = Color(0xFFEF4444),
+                        tint = Color(0xFFB3261E),
                         modifier = Modifier.size(14.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = stringResource(R.string.btn_retry_analysis),
-                        color = Color(0xFFEF4444),
+                        color = Color(0xFFB3261E),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -747,7 +744,7 @@ private fun ErrorCard(message: String, onRetry: () -> Unit) {
                     Row(
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))
-                            .background(CyanGlow.copy(alpha = 0.2f))
+                            .background(SoftPrimary.copy(alpha = 0.2f))
                             .clickable {
                                 val intent = Intent(context, MainActivity::class.java).apply {
                                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
@@ -761,13 +758,13 @@ private fun ErrorCard(message: String, onRetry: () -> Unit) {
                         Icon(
                             imageVector = Icons.Default.AutoAwesome,
                             contentDescription = stringResource(R.string.btn_grant),
-                            tint = CyanGlow,
+                            tint = SoftPrimary,
                             modifier = Modifier.size(14.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = stringResource(R.string.btn_grant),
-                            color = CyanGlow,
+                            color = SoftPrimary,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -783,7 +780,7 @@ private fun ErrorCard(message: String, onRetry: () -> Unit) {
                     Row(
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))
-                            .background(Color(0xFFF59E0B).copy(alpha = 0.2f))
+                            .background(Color(0xFF8A5700).copy(alpha = 0.2f))
                             .clickable {
                                 val intent = Intent(context, MainActivity::class.java).apply {
                                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
@@ -796,13 +793,13 @@ private fun ErrorCard(message: String, onRetry: () -> Unit) {
                         Icon(
                             imageVector = Icons.Default.Key,
                             contentDescription = null,
-                            tint = Color(0xFFF59E0B),
+                            tint = Color(0xFF8A5700),
                             modifier = Modifier.size(14.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "Secrets • Key",
-                            color = Color(0xFFF59E0B),
+                            text = stringResource(R.string.gemini_key_title),
+                            color = Color(0xFF8A5700),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -827,14 +824,14 @@ private fun ChatBubbleItem(
         horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
     ) {
         Surface(
-            color = if (isUser) Color(0xFF1E293B) else Color(0xFF111827),
+            color = if (isUser) SoftSurfaceVariant else SoftSurface,
             shape = RoundedCornerShape(
                 topStart = 12.dp,
                 topEnd = 12.dp,
                 bottomStart = if (isUser) 12.dp else 2.dp,
                 bottomEnd = if (isUser) 2.dp else 12.dp
             ),
-            border = if (isAI) androidx.compose.foundation.BorderStroke(1.dp, DarkBorder) else null,
+            border = if (isAI) androidx.compose.foundation.BorderStroke(1.dp, SoftBorder) else null,
             modifier = Modifier.fillMaxWidth(if (isUser) 0.85f else 1f)
         ) {
             Column(modifier = Modifier.padding(10.dp)) {
@@ -845,7 +842,7 @@ private fun ChatBubbleItem(
                 ) {
                     Text(
                         text = if (isUser) stringResource(R.string.sender_you) else stringResource(R.string.sender_gemini),
-                        color = if (isUser) Color.White.copy(alpha = 0.7f) else CyanGlow,
+                        color = if (isUser) SoftInk.copy(alpha = 0.7f) else SoftPrimary,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -857,7 +854,7 @@ private fun ChatBubbleItem(
                             Icon(
                                 imageVector = Icons.Default.ContentCopy,
                                 contentDescription = stringResource(R.string.btn_copy_text),
-                                tint = Color.White.copy(alpha = 0.6f),
+                                tint = SoftInk.copy(alpha = 0.6f),
                                 modifier = Modifier.size(14.dp)
                             )
                         }
@@ -891,7 +888,7 @@ private fun ChatBubbleItem(
                 SelectionContainer {
                     Text(
                         text = message.text,
-                        color = Color.White,
+                        color = SoftInk,
                         fontSize = 12.5.sp,
                         lineHeight = 18.sp
                     )
@@ -919,14 +916,14 @@ private fun QuickPromptsRow(
         val prompts = listOf(prompt1, prompt2, prompt3)
         for (prompt in prompts) {
             Surface(
-                color = if (isEnabled) Color(0xFF1E1B4B) else Color(0xFF1E1B4B).copy(alpha = 0.5f),
-                shape = RoundedCornerShape(16.dp),
+                color = if (isEnabled) SoftSurfaceVariant else SoftSurfaceVariant.copy(alpha = 0.5f),
+                shape = RoundedCornerShape(24.dp),
                 border = androidx.compose.foundation.BorderStroke(
                     1.dp,
-                    if (isEnabled) PurpleNeon.copy(alpha = 0.5f) else PurpleNeon.copy(alpha = 0.2f)
+                    if (isEnabled) SoftPrimary.copy(alpha = 0.5f) else SoftPrimary.copy(alpha = 0.2f)
                 ),
                 modifier = Modifier
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(24.dp))
                     .then(
                         if (isEnabled) {
                             Modifier.clickable { onPromptSelected(prompt) }
@@ -935,7 +932,7 @@ private fun QuickPromptsRow(
             ) {
                 Text(
                     text = prompt,
-                    color = if (isEnabled) Color.White else Color.White.copy(alpha = 0.4f),
+                    color = if (isEnabled) SoftInk else SoftInk.copy(alpha = 0.4f),
                     fontSize = 11.sp,
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                 )
@@ -962,7 +959,7 @@ private fun CompactModelSelector() {
         ) {
             Text(
                 text = activeModel.displayName,
-                color = CyanGlow,
+                color = SoftPrimary,
                 fontSize = 10.sp,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold
@@ -971,7 +968,7 @@ private fun CompactModelSelector() {
             Icon(
                 imageVector = Icons.Default.ExpandMore,
                 contentDescription = null,
-                tint = CyanGlow.copy(alpha = 0.8f),
+                tint = SoftPrimary.copy(alpha = 0.8f),
                 modifier = Modifier.size(12.dp)
             )
         }
@@ -979,7 +976,7 @@ private fun CompactModelSelector() {
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier.background(Color(0xFF151C28))
+            modifier = Modifier.background(SoftSurface)
         ) {
             availableModels.forEach { model ->
                 val isSelected = model.id == currentModelId || model.apiEndpointId == currentModelId
@@ -993,13 +990,13 @@ private fun CompactModelSelector() {
                             Column(modifier = Modifier.weight(1f, fill = false)) {
                                 Text(
                                     text = model.displayName,
-                                    color = if (isSelected) CyanGlow else Color.White,
+                                    color = if (isSelected) SoftPrimary else SoftInk,
                                     fontSize = 12.sp,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                                 )
                                 Text(
                                     text = model.description,
-                                    color = Color(0xFF94A3B8),
+                                    color = SoftMuted,
                                     fontSize = 10.sp,
                                     maxLines = 1
                                 )
@@ -1010,7 +1007,7 @@ private fun CompactModelSelector() {
                                     modifier = Modifier
                                         .size(16.dp)
                                         .clip(CircleShape)
-                                        .background(Color(0xFF0D6EFD)),
+                                        .background(SoftPrimary),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
