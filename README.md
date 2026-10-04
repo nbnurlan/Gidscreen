@@ -16,7 +16,7 @@ View your app in AI Studio: https://ai.studio/apps/40c1564e-5df4-4c24-bfa7-5014e
 1. Open Android Studio
 2. Select **Open** and choose the directory containing this project
 3. Allow Android Studio to fix any incompatibilities as it imports the project.
-4. Create a file named `.env` in the project directory and set `GEMINI_API_KEY` in that file to your Gemini API key (see `.env.example` for an example)
+4. Copy `.env.example` to `.env`, keeping placeholder values. Enter your own Gemini key in the installed app under **Settings → Gemini API key**.
 5. Remove this line from the app's `build.gradle.kts` file: `signingConfig = signingConfigs.getByName("debugConfig")`
 6. Run the app on an emulator or physical device
 7. If you have already published your app in AI Studio, please [request upload key reset](https://support.google.com/googleplay/android-developer/answer/9842756#zippy=%2Crequest-an-upload-key-reset) in Google Play Console.
@@ -34,9 +34,7 @@ uninstall the existing app until its data is backed up and migration is agreed.
 A new permanent key establishes a new installation lineage, not compatibility
 with the old one. This workflow deliberately fails instead of silently changing keys.
 
-Pull requests and the fix branch compile and run unit tests with a temporary
-validation-only key and placeholder API configuration. They upload a separate `Gidscreen-Test` artifact and do not consume the
-production Gemini secret.
+Pull requests use temporary validation signing. Pushes to the fix branch use the persistent signing secret. Both upload a separate `Gidscreen-Test` artifact without a bundled Gemini credential.
 
 Device checks before release:
 - Open chat, select a new area, cancel: the previous chat must reappear.
@@ -45,8 +43,7 @@ Device checks before release:
   disabled until success or failure, then become available again.
 - Install the persistently signed APK over an older APK with that same key.
 
-The Gemini key is still bundled into the APK. This change does not solve API-key
-protection for public distribution; a separate backend/authentication design is needed.
+The app uses a user-entered Gemini key, encrypted with AES-GCM and a non-exportable Android Keystore key in app-private no-backup storage. Saving, replacing and removing the key takes effect without restarting. The entry dialog masks input and blocks screenshots. Saving is local; it does not validate the key with Google. Uninstalling or clearing app data removes the saved credential. Requests send the key to Google in an HTTP header. Never distribute an APK built with real credentials in `.env`.
 
 ## In-app update notification
 
@@ -65,8 +62,7 @@ updated version manually; only subsequent releases can be announced by it.
 ### Publish a version from a phone
 
 1. Apply the changes and commit them to `main`.
-2. In GitHub, open **Settings → Secrets and variables → Actions**. Keep
-   `GEMINI_API_KEY` and add `DEBUG_KEYSTORE_BASE64` with the original signing key.
+2. In GitHub, open **Settings → Secrets and variables → Actions**. Add `DEBUG_KEYSTORE_BASE64` with the original signing key.
    The workflow cannot recover a private key from a previously built APK.
 3. For each later version, increase **both** `versionCode` and `versionName` in
    `app/build.gradle.kts`. Use a three-part name such as `1.2.2`.
@@ -103,9 +99,7 @@ Download the `Gidscreen-Test` artifact from a successful Actions run, extract
 its APK, and install it alongside the existing app. It has separate app data
 and permissions, and production update prompts are disabled.
 
-This APK uses placeholder Gemini/Firebase configuration: screen selection,
-rotation and basic chat UI can be checked, but real AI responses, live
-slow-network behaviour and Firebase integration cannot be validated with it.
-The test signing key is temporary per run; a later test APK may require
-uninstalling only Gidscreen Test. Never uninstall the original app for this test.
-Production signing still requires a separately backed-up persistent key.
+Enter your own Gemini key in **Settings → Gemini API key**, select an available model, and send a message to check live AI responses. Firebase still uses placeholder configuration and is not validated by this build.
+Fix-branch APKs now share a persistent signing key. If an older Test APK was signed with a temporary key, only that old Test installation may need removing once. Never uninstall the original app for this test.
+
+Device key checks: save a key, send a message, restart and check persistence, replace it, then remove it and confirm AI requests are disabled. Check that missing-key messages point to app Settings.
