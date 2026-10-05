@@ -125,6 +125,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // The manifest theme paints the logo before app initialization finishes.
+        setTheme(R.style.Theme_MyApplication)
         super.onCreate(savedInstanceState)
         window.setFlags(
             WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
