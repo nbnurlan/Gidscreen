@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.MyApplication" parent="Theme.AppCompat.DayNight.NoActionBar">
-        <item name="android:hardwareAccelerated">true</item>
-        <item name="android:windowBackground">#FFFAF6</item>
-    </style>
     <style name="Theme.MyApplication.Starting" parent="Theme.MyApplication">
-        <item name="android:windowBackground">@drawable/launch_background</item>
+        <item name="android:windowBackground">#FFFAF6</item>
+        <item name="android:windowSplashScreenBackground">#FFFAF6</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/launch_logo</item>
         <item name="android:statusBarColor">#FFFAF6</item>
         <item name="android:navigationBarColor">#FFFAF6</item>
         <item name="android:windowLightStatusBar">true</item>

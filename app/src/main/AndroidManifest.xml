@@ -26,7 +26,7 @@
             android:exported="true"
             android:hardwareAccelerated="true"
             android:label="${appLabel}"
-            android:theme="@style/Theme.MyApplication">
+            android:theme="@style/Theme.MyApplication.Starting">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
