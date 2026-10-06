@@ -29,7 +29,7 @@ Already declared: SYSTEM_ALERT_WINDOW (user grant), FOREGROUND_SERVICE, FOREGROU
 
 ## Verification
 
-Local `git diff --check` passed. Local Gradle execution was blocked before compilation by network access to services.gradle.org. GitHub Actions results must be checked separately; a successful build does not establish real-device overlay behavior.
+Local `git diff --check` passed. Local Gradle execution was blocked before compilation by network access to services.gradle.org. GitHub Actions run 37501266676 passed APK build and unit tests for the initial patch. A successful build does not establish real-device overlay behavior. The follow-up journal recovery test also needs CI verification.
 
 Manual device checklist (Android 10/Redmi and Android 14–16):
 

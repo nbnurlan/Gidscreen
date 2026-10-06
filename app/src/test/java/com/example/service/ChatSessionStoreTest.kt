@@ -37,6 +37,14 @@ class ChatSessionStoreTest {
         assertEquals(answer.text, restored.messages.last().text)
     }
 
+    @Test fun interruptedAtomicWriteRecoversPreviousJournal() = runTest {
+        val message = ChatMessage(sender = MessageSender.AI, text = "Saved answer")
+        ChatSessionStore(context).save(listOf(message), false)
+        val journal = File(context.noBackupFilesDir, "floating-chat/session.json")
+        assertTrue(journal.renameTo(File(journal.path + ".bak")))
+        assertEquals(message.id, ChatSessionStore(context).load().messages.single().id)
+    }
+
     @Test fun clearingSessionRemovesPersistedCropsAndContext() = runTest {
         val store = ChatSessionStore(context)
         store.save(listOf(ChatMessage(sender = MessageSender.USER, text = "image",

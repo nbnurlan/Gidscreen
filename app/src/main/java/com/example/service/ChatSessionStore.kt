@@ -24,8 +24,11 @@ internal class ChatSessionStore(context: Context) {
 
     suspend fun load(): Session = withContext(Dispatchers.IO) {
         lock.withLock {
-            if (!journal.baseFile.exists()) return@withLock Session(emptyList(), false)
-            val json = JSONObject(journal.openRead().bufferedReader().use { it.readText() })
+            // openRead restores AtomicFile's backup after an interrupted write (including API 24–28).
+            val source = try { journal.openRead() } catch (_: java.io.FileNotFoundException) {
+                return@withLock Session(emptyList(), false)
+            }
+            val json = JSONObject(source.bufferedReader().use { it.readText() })
             val rows = json.getJSONArray("messages")
             val messages = (0 until rows.length()).map { i ->
                 val row = rows.getJSONObject(i)
