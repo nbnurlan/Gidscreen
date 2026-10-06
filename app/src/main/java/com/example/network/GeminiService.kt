@@ -23,6 +23,8 @@ class ApiKeyInvalidException(message: String) : GeminiApiException(message)
 object GeminiService {
     private const val BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 
+    private fun isQwenSelected(): Boolean = GeminiModelManager.selectedModelId.value == QwenService.MODEL_ID
+
     fun getActiveModelId(): String {
         return GeminiModelManager.selectedModelId.value.removePrefix("models/")
     }
@@ -38,6 +40,7 @@ object GeminiService {
         .build()
 
     fun isApiKeyConfigured(): Boolean {
+        if (isQwenSelected()) return QwenService.isApiKeyConfigured()
         val key = GeminiKeyStore.get()
         return key.isNotBlank() && key != "MY_GEMINI_API_KEY"
     }
@@ -123,6 +126,10 @@ object GeminiService {
         bitmap: Bitmap,
         customInstruction: String? = null
     ): Result<String> = withContext(Dispatchers.IO) {
+        if (isQwenSelected()) {
+            return@withContext QwenService.analyzeScreenCrop(bitmap, customInstruction)
+        }
+
         val apiKey = GeminiKeyStore.get()
 
         if (!isApiKeyConfigured()) {
@@ -230,6 +237,10 @@ object GeminiService {
         newQuestion: String,
         bitmap: Bitmap?
     ): Result<String> = withContext(Dispatchers.IO) {
+        if (isQwenSelected()) {
+            return@withContext QwenService.continueChat(history, newQuestion, bitmap)
+        }
+
         val apiKey = GeminiKeyStore.get()
         if (!isApiKeyConfigured()) {
             val currentLang = LocaleHelper.currentLanguage.value
