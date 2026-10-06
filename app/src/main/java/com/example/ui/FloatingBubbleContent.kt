@@ -27,10 +27,10 @@ fun FloatingBubbleContent(
     dockRight: Boolean = true
 ) {
     val description = stringResource(R.string.bubble_content_desc)
-    Canvas(modifier.size(if (docked) 24.dp else 64.dp, 64.dp)
+    Canvas(modifier.size(if (docked) 20.dp else 64.dp, if (docked) 56.dp else 64.dp)
         .testTag("floating_bubble_button")
         .semantics { contentDescription = description }) {
-        val radius = 27.dp.toPx()
+        val radius = (if (docked) 23.dp else 27.dp).toPx()
         val center = Offset(
             if (!docked) size.width / 2 else if (dockRight) size.width + 8.dp.toPx() else -8.dp.toPx(),
             size.height / 2
