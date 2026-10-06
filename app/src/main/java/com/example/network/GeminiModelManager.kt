@@ -92,7 +92,10 @@ object GeminiModelManager {
             try {
                 val parsed = parseModelsFromJson(cachedJson)
                 if (parsed.isNotEmpty()) {
-                    _availableModels.value = parsed
+                    val merged = LinkedHashMap<String, GeminiModelInfo>()
+                    defaultModels.forEach { merged[it.apiEndpointId] = it }
+                    parsed.forEach { merged[it.apiEndpointId] = it }
+                    _availableModels.value = merged.values.toList()
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
