@@ -86,7 +86,7 @@ class LassoOverlayService : Service() {
             val dm = resources.displayMetrics
             bubbleDockRight.value = params.x + view.width / 2 >= dm.widthPixels / 2
             bubbleDocked.value = true
-            params.width = (24 * dm.density).toInt()
+            params.width = (20 * dm.density).toInt()
             params.x = if (bubbleDockRight.value) dm.widthPixels - params.width else 0
             runCatching { windowManager.updateViewLayout(view, params) }
         }
