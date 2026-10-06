@@ -8,6 +8,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 object MediaProjectionHolder {
+    fun createCaptureIntent(manager: MediaProjectionManager): Intent =
+        if (android.os.Build.VERSION.SDK_INT >= 34) {
+            manager.createScreenCaptureIntent(
+                android.media.projection.MediaProjectionConfig.createConfigForDefaultDisplay())
+        } else manager.createScreenCaptureIntent()
+
     var resultCode: Int = 0
     var resultData: Intent? = null
     var mediaProjection: MediaProjection? = null

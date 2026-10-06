@@ -255,7 +255,7 @@ fun MainAppScreen(
         if (requestCaptureInitially) {
             onRequestCaptureHandled()
             val projectionManager = context.getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-            mediaProjectionLauncher.launch(projectionManager.createScreenCaptureIntent())
+            mediaProjectionLauncher.launch(MediaProjectionHolder.createCaptureIntent(projectionManager))
         }
     }
 
@@ -355,7 +355,7 @@ fun MainAppScreen(
                         },
                         onOpenCapturePermission = {
                             val projectionManager = context.getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-                            mediaProjectionLauncher.launch(projectionManager.createScreenCaptureIntent())
+                            mediaProjectionLauncher.launch(MediaProjectionHolder.createCaptureIntent(projectionManager))
                         },
                         onOpenNotificationPermission = {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -394,7 +394,7 @@ fun MainAppScreen(
 
                                         // Prompt MediaProjection
                                         val projectionManager = context.getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-                                        mediaProjectionLauncher.launch(projectionManager.createScreenCaptureIntent())
+                                        mediaProjectionLauncher.launch(MediaProjectionHolder.createCaptureIntent(projectionManager))
                                     } else {
                                         stopLassoService(context)
                                         MediaProjectionHolder.clear()

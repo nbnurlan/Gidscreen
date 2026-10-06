@@ -174,10 +174,11 @@ object ScreenCaptureHelper {
                         ?: return@setOnImageAvailableListener
                     latestBitmap?.recycle()
                     latestBitmap = bitmap
-                    latestBitmapTimestamp = System.currentTimeMillis()
+                    latestBitmapTimestamp = image.timestamp
                     val continuation = pendingContinuation
-                    pendingContinuation = null
-                    if (continuation != null && continuation.isActive) {
+                    if (continuation != null && continuation.isActive &&
+                        latestBitmapTimestamp >= captureRequestedTimestamp) {
+                        pendingContinuation = null
                         continuation.resume(bitmap.copy(Bitmap.Config.ARGB_8888, true))
                     }
                 } catch (e: Exception) {
@@ -232,7 +233,7 @@ object ScreenCaptureHelper {
      * Marks the timestamp when selection ended and overlays were hidden,
      * ensuring frames captured after this point are treated as fresh and clean.
      */
-    fun prepareForCapture(timestamp: Long = System.currentTimeMillis()) {
+    fun prepareForCapture(timestamp: Long = System.nanoTime()) {
         synchronized(sessionLock) {
             captureRequestedTimestamp = timestamp
         }
@@ -244,7 +245,7 @@ object ScreenCaptureHelper {
      */
     fun invalidateFrame() {
         synchronized(sessionLock) {
-            captureRequestedTimestamp = System.currentTimeMillis()
+            captureRequestedTimestamp = System.nanoTime()
             pendingContinuation?.let {
                 if (it.isActive) it.resume(null)
             }
@@ -331,6 +332,18 @@ object ScreenCaptureHelper {
             return@withContext null
         }
 
+        // Reattach the existing surface to request a fresh frame even on a static screen.
+        // This does not create a second VirtualDisplay or consume another consent token.
+        synchronized(sessionLock) {
+            try {
+                virtualDisplay?.surface = null
+                virtualDisplay?.surface = imageReader?.surface
+            } catch (error: Exception) {
+                Log.e(TAG, "Unable to request a fresh frame", error)
+                return@withContext null
+            }
+        }
+
         // The reader callback is the sole consumer. Sharing acquisition between threads
         // could recycle a bitmap while the other thread was copying it.
         // 2. Check if a frame already arrived after the minTimestamp (overlay hidden time)
@@ -351,6 +364,7 @@ object ScreenCaptureHelper {
                         continuation.resume(bmp.copy(Bitmap.Config.ARGB_8888, true))
                         return@suspendCancellableCoroutine
                     }
+                    captureRequestedTimestamp = threshold
                     pendingContinuation = continuation
                 }
                 continuation.invokeOnCancellation {
@@ -367,16 +381,7 @@ object ScreenCaptureHelper {
             return@withContext frame
         }
 
-        // 4. Reliable Fallback: Screen was static, so VirtualDisplay produced no new frames.
-        // Use available latestBitmap fallback so the capture NEVER fails!
-        synchronized(sessionLock) {
-            val fallback = latestBitmap
-            if (fallback != null && !fallback.isRecycled) {
-                Log.d(TAG, "Screen was static. Using available latestBitmap fallback.")
-                return@withContext fallback.copy(Bitmap.Config.ARGB_8888, true)
-            }
-        }
-
+        // Never reuse an older frame: it can contain the selection UI or another app.
         Log.e(TAG, "No screen frame available for capture")
         null
     }

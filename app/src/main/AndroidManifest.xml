@@ -40,6 +40,10 @@
             </intent-filter>
         </activity>
 
+        <activity android:name=".ScreenCapturePermissionActivity"
+            android:exported="false" android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
         <service
             android:name=".service.LassoOverlayService"
             android:enabled="true"

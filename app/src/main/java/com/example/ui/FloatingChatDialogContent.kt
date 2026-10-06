@@ -46,7 +46,6 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.CropFree
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteOutline
-import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Key
@@ -110,12 +109,14 @@ fun FloatingChatDialogContent(
     onDragDelta: (Float, Float) -> Unit,
     onResizeDelta: (Float, Float) -> Unit,
     onClearChat: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    initialDraft: String = "",
+    onDraftChanged: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
 
     var isMinimized by remember { mutableStateOf(false) }
-    var followUpInput by remember { mutableStateOf("") }
+    var followUpInput by remember { mutableStateOf(initialDraft) }
     var previewBitmap by remember { mutableStateOf<Bitmap?>(null) }
     val isAnalyzing = analysisState is AnalysisState.Analyzing || analysisState is AnalysisState.Capturing
     val listState = rememberLazyListState()
@@ -247,14 +248,7 @@ fun FloatingChatDialogContent(
                     .padding(horizontal = 10.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Drag Handle & Title
-                Icon(
-                    imageVector = Icons.Default.DragHandle,
-                    contentDescription = stringResource(R.string.btn_drag_window),
-                    tint = SoftInk.copy(alpha = 0.5f),
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
+                // Title
                 Icon(
                     imageVector = Icons.Default.AutoAwesome,
                     contentDescription = null,
@@ -291,10 +285,9 @@ fun FloatingChatDialogContent(
                 }
 
                 // New Selection Action
-                IconButton(
+                androidx.compose.material3.TextButton(
                     onClick = onNewSelectionRequested,
-                    enabled = !isAnalyzing,
-                    modifier = Modifier.size(30.dp)
+                    enabled = !isAnalyzing
                 ) {
                     Icon(
                         imageVector = Icons.Default.CropFree,
@@ -302,6 +295,7 @@ fun FloatingChatDialogContent(
                         tint = if (!isAnalyzing) SoftPrimary else SoftPrimary.copy(alpha = 0.3f),
                         modifier = Modifier.size(18.dp)
                     )
+                    Text(stringResource(R.string.selection_action), fontSize = 11.sp)
                 }
 
                 // Minimize Button
@@ -345,24 +339,7 @@ fun FloatingChatDialogContent(
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    // Item 1: Captured Screen Thumbnail (shown if not already in chat items)
-                    val thumb = when (analysisState) {
-                        is AnalysisState.Analyzing -> analysisState.thumbnail
-                        is AnalysisState.Success -> analysisState.thumbnail
-                        is AnalysisState.Error -> analysisState.thumbnail
-                        else -> null
-                    }
-
-                    if (thumb != null && visibleMessages.none { it.image != null }) {
-                        item {
-                            ScreenThumbnailCard(
-                                bitmap = thumb,
-                                onImageClick = { previewBitmap = thumb }
-                            )
-                        }
-                    }
-
-                    // Item 2: Loading State
+                    // Loading State
                     if (analysisState is AnalysisState.Analyzing) {
                         item {
                             AnalyzingStatusCard(rotation = rotation)
@@ -396,19 +373,6 @@ fun FloatingChatDialogContent(
                         )
                     }
 
-                    // Quick suggestion prompts if initial analysis succeeded and conversation has no user follow-up yet
-                    if (analysisState is AnalysisState.Success && visibleMessages.count { it.sender == MessageSender.USER } == 0) {
-                        item {
-                            QuickPromptsRow(
-                                isEnabled = !isAnalyzing,
-                                onPromptSelected = { prompt ->
-                                    if (!isAnalyzing) {
-                                        onSendFollowUp(prompt)
-                                    }
-                                }
-                            )
-                        }
-                    }
                 }
             }
 
@@ -425,7 +389,7 @@ fun FloatingChatDialogContent(
                 ) {
                     OutlinedTextField(
                         value = followUpInput,
-                        onValueChange = { followUpInput = it },
+                        onValueChange = { followUpInput = it; onDraftChanged(it) },
                         enabled = !isAnalyzing,
                         placeholder = {
                             Text(
@@ -458,6 +422,7 @@ fun FloatingChatDialogContent(
                             if (canSend) {
                                 val text = followUpInput.trim()
                                 followUpInput = ""
+                                onDraftChanged("")
                                 onSendFollowUp(text)
                             }
                         },
