@@ -371,19 +371,6 @@ fun FloatingChatDialogContent(
                         )
                     }
 
-                    // Quick suggestion prompts if initial analysis succeeded and conversation has no user follow-up yet
-                    if (analysisState is AnalysisState.Success && visibleMessages.count { it.sender == MessageSender.USER } == 0) {
-                        item {
-                            QuickPromptsRow(
-                                isEnabled = !isAnalyzing,
-                                onPromptSelected = { prompt ->
-                                    if (!isAnalyzing) {
-                                        onSendFollowUp(prompt)
-                                    }
-                                }
-                            )
-                        }
-                    }
                 }
             }
 
