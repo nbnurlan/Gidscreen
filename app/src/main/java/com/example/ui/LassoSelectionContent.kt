@@ -30,7 +30,9 @@ import androidx.compose.material.icons.filled.CropFree
 import androidx.compose.material.icons.filled.CropLandscape
 import androidx.compose.material.icons.filled.Gesture
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -76,7 +78,7 @@ fun LassoSelectionContent(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var mode by remember { mutableStateOf(SelectionMode.LASSO) }
+    var mode by remember { mutableStateOf(SelectionMode.RECTANGLE) }
 
     // Touch points tracking
     val freehandPoints = remember { mutableStateListOf<Offset>() }
@@ -86,7 +88,7 @@ fun LassoSelectionContent(
     var isDrawing by remember { mutableStateOf(false) }
 
     // Calculate current compose Path
-    val currentPath = remember(mode, freehandPoints.size, rectStart, rectCurrent) {
+    val currentPath = remember(mode, freehandPoints.size, rectStart, rectCurrent, isDrawing) {
         val path = Path()
         when (mode) {
             SelectionMode.LASSO, SelectionMode.POLYGON -> {
@@ -101,7 +103,7 @@ fun LassoSelectionContent(
                     }
                     val last = freehandPoints.last()
                     path.lineTo(last.x, last.y)
-                    if (!isDrawing && freehandPoints.size > 2) {
+                    if (!isDrawing ) {
                         path.close()
                     }
                 }
@@ -168,7 +170,7 @@ fun LassoSelectionContent(
         }
 
         if (bounds != null) {
-            val androidPath = if ((mode == SelectionMode.LASSO || mode == SelectionMode.POLYGON) && freehandPoints.size > 2) {
+            val androidPath = if (mode != SelectionMode.RECTANGLE) {
                 currentPath.asAndroidPath()
             } else null
             onSelectionConfirmed(androidPath, bounds)
@@ -214,7 +216,7 @@ fun LassoSelectionContent(
                         },
                         onDragEnd = {
                             isDrawing = false
-                            completeSelection()
+                            // Wait for explicit confirmation; lifting a finger never uploads content.
                         },
                         onDragCancel = {
                             isDrawing = false
@@ -256,6 +258,26 @@ fun LassoSelectionContent(
                         pathEffect = null
                     )
                 )
+            }
+        }
+
+        Surface(
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 48.dp),
+            shape = RoundedCornerShape(24.dp),
+            color = SoftSurface
+        ) {
+            Row {
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.btn_cancel)) }
+                TextButton(onClick = {
+                    freehandPoints.clear()
+                    rectStart = null
+                    rectCurrent = null
+                }) { Text(stringResource(R.string.btn_reset_selection)) }
+                TextButton(
+                    onClick = { completeSelection() },
+                    enabled = !isDrawing && !currentPath.isEmpty,
+                    modifier = Modifier.testTag("selection_confirm")
+                ) { Text(stringResource(R.string.selection_confirm)) }
             }
         }
 
@@ -329,7 +351,6 @@ fun LassoSelectionContent(
                             freehandPoints.clear()
                             rectStart = null
                             rectCurrent = null
-                            onDismiss()
                         },
                         modifier = Modifier
                             .size(36.dp)
@@ -339,7 +360,7 @@ fun LassoSelectionContent(
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.Undo,
-                            contentDescription = stringResource(R.string.btn_cancel),
+                            contentDescription = stringResource(R.string.btn_reset_selection),
                             tint = SoftInk,
                             modifier = Modifier.size(19.dp)
                         )

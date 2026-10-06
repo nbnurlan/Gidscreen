@@ -29,6 +29,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.ComposeView
 import androidx.core.app.NotificationCompat
 import com.example.LassoApplication
+import com.example.ScreenCapturePermissionActivity
+import android.provider.Settings
+import android.view.inputmethod.InputMethodManager
 import com.example.MainActivity
 import com.example.R
 import com.example.model.AnalysisState
@@ -118,6 +121,32 @@ class LassoOverlayService : Service() {
     private val chatMessages = mutableStateListOf<ChatMessage>()
     private var currentBitmap: Bitmap? = null
 
+    private lateinit var sessionStore: ChatSessionStore
+    private val windowState by lazy { getSharedPreferences("floating-chat-window", MODE_PRIVATE) }
+    private var restoringSession = true
+    private var openSelectionAfterRestore = false
+    private var captureGeneration = 0
+    private var foregroundReady = false
+
+    private suspend fun persistSession() {
+        val messages = chatMessages.toList()
+        val pending = analysisState.value is AnalysisState.Analyzing ||
+            analysisState.value is AnalysisState.Capturing
+        try {
+            sessionStore.save(messages, pending)
+        } catch (error: java.io.IOException) {
+            android.util.Log.e("Gidscreen", "Unable to save chat session", error)
+            android.widget.Toast.makeText(this, R.string.session_save_failed,
+                android.widget.Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun saveChatWindow() {
+        val cp = chatParams ?: return
+        windowState.edit().putInt("x", cp.x).putInt("y", cp.y)
+            .putInt("width", cp.width).putInt("height", cp.height).apply()
+    }
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
@@ -129,8 +158,49 @@ class LassoOverlayService : Service() {
         selectionLifecycleOwner.onCreate()
         chatLifecycleOwner.onCreate()
 
-        startForegroundNotification()
-        showFloatingBubble()
+        // A dead process cannot reuse MediaProjection consent. Wait for a fresh user start.
+        if (!MediaProjectionHolder.isAvailable || !Settings.canDrawOverlays(this)) {
+            stopSelf()
+            return
+        }
+        try {
+            startForegroundNotification()
+            foregroundReady = true
+        } catch (_: SecurityException) {
+            MediaProjectionHolder.clear()
+            stopSelf()
+            return
+        }
+        sessionStore = ChatSessionStore(this)
+        serviceScope.launch {
+            try {
+                val saved = sessionStore.load()
+                chatMessages.addAll(saved.messages)
+                currentBitmap = saved.messages.lastOrNull { it.image != null }?.image
+                analysisState.value = if (saved.interrupted) {
+                    AnalysisState.Error(getString(R.string.session_interrupted), currentBitmap)
+                } else {
+                    saved.messages.lastOrNull { it.sender == MessageSender.AI }?.let {
+                        AnalysisState.Success(it.text, currentBitmap)
+                    } ?: AnalysisState.Idle
+                }
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                android.util.Log.e("Gidscreen", "Unable to restore chat", error)
+                analysisState.value = AnalysisState.Error(getString(R.string.session_restore_failed), null)
+            }
+            restoringSession = false
+            showFloatingBubble()
+            if (windowState.getBoolean("open", false)) {
+                bubbleView?.visibility = View.GONE
+                showFloatingChatDialog()
+            }
+            if (openSelectionAfterRestore) {
+                openSelectionAfterRestore = false
+                showSelectionOverlay()
+            }
+        }
 
         // Warm up MediaProjection and VirtualDisplay session if available
         val projectionManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
@@ -141,13 +211,14 @@ class LassoOverlayService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (!foregroundReady) return START_NOT_STICKY
         when (intent?.action) {
             ACTION_STOP_SERVICE -> {
                 stopSelf()
                 return START_NOT_STICKY
             }
             ACTION_OPEN_SELECTION -> {
-                showSelectionOverlay()
+                if (restoringSession) openSelectionAfterRestore = true else showSelectionOverlay()
             }
         }
 
@@ -158,7 +229,7 @@ class LassoOverlayService : Service() {
             ScreenCaptureHelper.ensureSession(this, projection)
         }
 
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
     private fun startForegroundNotification() {
@@ -298,7 +369,10 @@ class LassoOverlayService : Service() {
                     if (!isDragging && dx <= touchSlop && dy <= touchSlop && duration < 400) {
                         // Bir marta oddiy bosilganda (click) avvalgi amali (ekranni belgilash) chaqiriladi
                         v.performClick()
-                        if (startedDocked) scheduleBubbleDock() else showSelectionOverlay()
+                        if (startedDocked) scheduleBubbleDock() else {
+                            bubbleView?.visibility = View.GONE
+                            showFloatingChatDialog()
+                        }
                     } else {
                         // Siljitish tugagach qo'yilgan joyda saqlanadi
                         val dm = resources.displayMetrics
@@ -353,8 +427,18 @@ class LassoOverlayService : Service() {
     // Feature 2: Fullscreen Custom Freehand/Lasso Screen Selection
     // -------------------------------------------------------------
     private fun showSelectionOverlay() {
-        if (selectionView != null || analysisState.value is AnalysisState.Analyzing ||
+        if (restoringSession || selectionView != null || analysisState.value is AnalysisState.Analyzing ||
             analysisState.value is AnalysisState.Capturing) return
+
+        if (!MediaProjectionHolder.isAvailable) {
+            // User-triggered consent, without destroying or replacing the chat view.
+            startActivity(Intent(this, ScreenCapturePermissionActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            return
+        }
+        (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager)
+            .hideSoftInputFromWindow(chatView?.windowToken, 0)
+        chatView?.clearFocus()
 
         // Hide floating bubble while selecting
         bubbleView?.visibility = View.GONE
@@ -400,7 +484,7 @@ class LassoOverlayService : Service() {
             selectionView = view
         } catch (e: Exception) {
             e.printStackTrace()
-            restoreFloatingBubble()
+            dismissSelectionOverlay(restoreBubble = true)
         }
     }
 
@@ -426,6 +510,11 @@ class LassoOverlayService : Service() {
     // Feature 3: Screen Capture & Auto AI Analysis
     // -------------------------------------------------------------
     private fun onLassoSelected(path: Path?, boundingBox: RectF) {
+        if (analysisState.value is AnalysisState.Capturing ||
+            analysisState.value is AnalysisState.Analyzing) return
+        analysisState.value = AnalysisState.Capturing
+        val generation = captureGeneration
+        val rotation = windowManager.defaultDisplay.rotation
         // 1. Calculate system offsets and screen coordinates BEFORE modifying view visibility
         val location = IntArray(2)
         selectionView?.getLocationOnScreen(location)
@@ -463,12 +552,12 @@ class LassoOverlayService : Service() {
         bubbleView?.visibility = View.GONE
         chatView?.visibility = View.GONE
 
-        val captureStartTime = System.currentTimeMillis()
-        ScreenCaptureHelper.prepareForCapture(captureStartTime)
-
         serviceScope.launch {
             // Delay to ensure the overlay layers have cleared from GPU compositing & SurfaceFlinger
-            delay(100)
+            delay(150)
+            if (generation != captureGeneration) return@launch
+            val captureStartTime = System.nanoTime()
+            ScreenCaptureHelper.prepareForCapture(captureStartTime)
 
             var projection = MediaProjectionHolder.mediaProjection
 
@@ -496,6 +585,16 @@ class LassoOverlayService : Service() {
                 boundingBox = screenBoundingBox,
                 minTimestamp = captureStartTime
             )
+
+            if (generation != captureGeneration || rotation != windowManager.defaultDisplay.rotation) {
+                croppedBitmap?.recycle()
+                if (generation == captureGeneration) {
+                    analysisState.value = AnalysisState.Idle
+                    dismissSelectionOverlay()
+                    showSelectionOverlay()
+                }
+                return@launch
+            }
 
             // Remove selection overlay completely now that capture is done
             dismissSelectionOverlay(restoreBubble = false)
@@ -539,6 +638,7 @@ class LassoOverlayService : Service() {
                 isVisible = false // Hidden from chat UI: sent in background to Gemini
             )
             chatMessages.add(userMsg)
+            persistSession()
 
             // Continue persistent multi-turn conversation with all previous context + new capture
             val result = GeminiService.continueChat(
@@ -566,6 +666,7 @@ class LassoOverlayService : Service() {
                     thumbnail = croppedBitmap
                 )
             }
+            persistSession()
         }
     }
 
@@ -573,6 +674,7 @@ class LassoOverlayService : Service() {
     // Feature 4: Resizable Floating Chat Window
     // -------------------------------------------------------------
     private fun showFloatingChatDialog() {
+        windowState.edit().putBoolean("open", true).apply()
         if (chatView != null) {
             chatView?.visibility = View.VISIBLE
             return
@@ -594,8 +696,10 @@ class LassoOverlayService : Service() {
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.CENTER
-            x = 0
-            y = 0
+            width = windowState.getInt("width", defaultWidth).coerceIn(1, metrics.widthPixels)
+            height = windowState.getInt("height", defaultHeight).coerceIn(1, metrics.heightPixels)
+            x = windowState.getInt("x", 0).coerceIn(-(metrics.widthPixels - width) / 2, (metrics.widthPixels - width) / 2)
+            y = windowState.getInt("y", 0).coerceIn(-(metrics.heightPixels - height) / 2, (metrics.heightPixels - height) / 2)
         }
         chatParams = params
 
@@ -605,6 +709,8 @@ class LassoOverlayService : Service() {
             setContent {
                 MyApplicationTheme(darkTheme = false, dynamicColor = false) {
                     FloatingChatDialogContent(
+                        initialDraft = windowState.getString("draft", "") ?: "",
+                        onDraftChanged = { windowState.edit().putString("draft", it).apply() },
                         analysisState = analysisState.value,
                         chatMessages = chatMessages,
                         onSendFollowUp = { question ->
@@ -618,11 +724,11 @@ class LassoOverlayService : Service() {
                             if (bmp != null) {
                                 retryAnalysis(bmp)
                             } else {
-                                hideFloatingChatDialog()
                                 showSelectionOverlay()
                             }
                         },
                         onClose = {
+                            windowState.edit().putBoolean("open", false).apply()
                             hideFloatingChatDialog()
                             restoreFloatingBubble()
                         },
@@ -632,16 +738,18 @@ class LassoOverlayService : Service() {
                             cp.y += dy.toInt()
                             try {
                                 windowManager.updateViewLayout(chatView, cp)
+                                saveChatWindow()
                             } catch (_: Exception) {}
                         },
                         onResizeDelta = { dw, dh ->
                             val cp = chatParams ?: return@FloatingChatDialogContent
-                            val newW = (cp.width + dw.toInt()).coerceIn(280, metrics.widthPixels - 40)
-                            val newH = (cp.height + dh.toInt()).coerceIn(240, metrics.heightPixels - 80)
+                            val newW = (cp.width + dw.toInt()).coerceIn(280.coerceAtMost(resources.displayMetrics.widthPixels), resources.displayMetrics.widthPixels)
+                            val newH = (cp.height + dh.toInt()).coerceIn(240.coerceAtMost(resources.displayMetrics.heightPixels), resources.displayMetrics.heightPixels)
                             cp.width = newW
                             cp.height = newH
                             try {
                                 windowManager.updateViewLayout(chatView, cp)
+                                saveChatWindow()
                             } catch (_: Exception) {}
                         },
                         onClearChat = {
@@ -650,6 +758,7 @@ class LassoOverlayService : Service() {
                                 chatMessages.clear()
                                 currentBitmap = null
                                 analysisState.value = AnalysisState.Idle
+                                serviceScope.launch { persistSession() }
                             }
                         }
                     )
@@ -679,6 +788,7 @@ class LassoOverlayService : Service() {
 
         serviceScope.launch {
             try {
+                persistSession()
                 val result = GeminiService.continueChat(
                     history = history,
                     newQuestion = text,
@@ -694,6 +804,7 @@ class LassoOverlayService : Service() {
                 }
             } finally {
                 analysisState.value = previousState
+                persistSession()
             }
         }
     }
@@ -702,12 +813,14 @@ class LassoOverlayService : Service() {
         if (analysisState.value is AnalysisState.Analyzing) return
         analysisState.value = AnalysisState.Analyzing(bitmap)
         serviceScope.launch {
-            val userPrompt = chatMessages.lastOrNull { it.sender == MessageSender.USER }?.text
-                ?: GeminiService.getDefaultAnalysisPrompt()
+            persistSession()
+            val requestIndex = chatMessages.indexOfLast { it.sender == MessageSender.USER }
+            val request = chatMessages.getOrNull(requestIndex)
+            val userPrompt = request?.text ?: GeminiService.getDefaultAnalysisPrompt()
             val result = GeminiService.continueChat(
-                history = chatMessages.filter { it.sender != MessageSender.SYSTEM }.dropLast(1),
+                history = chatMessages.take(requestIndex.coerceAtLeast(0)),
                 newQuestion = userPrompt,
-                bitmap = bitmap
+                bitmap = if (request != null) request.image else bitmap
             )
             result.onSuccess { explanation ->
                 analysisState.value = AnalysisState.Success(explanation, bitmap)
@@ -723,6 +836,7 @@ class LassoOverlayService : Service() {
                     thumbnail = bitmap
                 )
             }
+            persistSession()
         }
     }
 
@@ -741,6 +855,23 @@ class LassoOverlayService : Service() {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
+        val wasSelecting = selectionView != null
+        if (wasSelecting) {
+            captureGeneration++
+            if (analysisState.value is AnalysisState.Capturing) analysisState.value = AnalysisState.Idle
+            dismissSelectionOverlay()
+            // Old touch coordinates are invalid after rotation. Start with an empty selection.
+            showSelectionOverlay()
+        }
+        chatParams?.let { cp ->
+            val metrics = resources.displayMetrics
+            cp.width = cp.width.coerceAtMost(metrics.widthPixels)
+            cp.height = cp.height.coerceAtMost(metrics.heightPixels)
+            cp.x = cp.x.coerceIn(-(metrics.widthPixels - cp.width) / 2, (metrics.widthPixels - cp.width) / 2)
+            cp.y = cp.y.coerceIn(-(metrics.heightPixels - cp.height) / 2, (metrics.heightPixels - cp.height) / 2)
+            chatView?.let { runCatching { windowManager.updateViewLayout(it, cp) } }
+            saveChatWindow()
+        }
         val params = bubbleParams ?: return
         val view = bubbleView ?: return
         bubbleIdleJob?.cancel()
@@ -757,7 +888,7 @@ class LassoOverlayService : Service() {
         serviceScope.cancel()
 
         hideFloatingBubble()
-        dismissSelectionOverlay()
+        dismissSelectionOverlay(restoreBubble = false)
         hideFloatingChatDialog()
 
         bubbleLifecycleOwner.onDestroy()

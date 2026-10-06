@@ -190,4 +190,9 @@
     <string name="settings_not_allowed">Не разрешено</string>
     <string name="settings_key_saved_short">Сохранён</string>
     <string name="settings_key_missing_short">Не введён</string>
+    <string name="selection_confirm">Подтвердить</string>
+    <string name="selection_action">Выбрать</string>
+    <string name="session_interrupted">Предыдущая операция прервана. Выберите область или отправьте вопрос снова.</string>
+    <string name="session_save_failed">Не удалось сохранить диалог. Проверьте память устройства.</string>
+    <string name="session_restore_failed">Не удалось восстановить диалог.</string>
 </resources>

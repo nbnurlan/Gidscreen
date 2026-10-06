@@ -110,12 +110,14 @@ fun FloatingChatDialogContent(
     onDragDelta: (Float, Float) -> Unit,
     onResizeDelta: (Float, Float) -> Unit,
     onClearChat: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    initialDraft: String = "",
+    onDraftChanged: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
 
     var isMinimized by remember { mutableStateOf(false) }
-    var followUpInput by remember { mutableStateOf("") }
+    var followUpInput by remember { mutableStateOf(initialDraft) }
     var previewBitmap by remember { mutableStateOf<Bitmap?>(null) }
     val isAnalyzing = analysisState is AnalysisState.Analyzing || analysisState is AnalysisState.Capturing
     val listState = rememberLazyListState()
@@ -291,10 +293,9 @@ fun FloatingChatDialogContent(
                 }
 
                 // New Selection Action
-                IconButton(
+                androidx.compose.material3.TextButton(
                     onClick = onNewSelectionRequested,
-                    enabled = !isAnalyzing,
-                    modifier = Modifier.size(30.dp)
+                    enabled = !isAnalyzing
                 ) {
                     Icon(
                         imageVector = Icons.Default.CropFree,
@@ -302,6 +303,7 @@ fun FloatingChatDialogContent(
                         tint = if (!isAnalyzing) SoftPrimary else SoftPrimary.copy(alpha = 0.3f),
                         modifier = Modifier.size(18.dp)
                     )
+                    Text(stringResource(R.string.selection_action), fontSize = 11.sp)
                 }
 
                 // Minimize Button
@@ -425,7 +427,7 @@ fun FloatingChatDialogContent(
                 ) {
                     OutlinedTextField(
                         value = followUpInput,
-                        onValueChange = { followUpInput = it },
+                        onValueChange = { followUpInput = it; onDraftChanged(it) },
                         enabled = !isAnalyzing,
                         placeholder = {
                             Text(
@@ -458,6 +460,7 @@ fun FloatingChatDialogContent(
                             if (canSend) {
                                 val text = followUpInput.trim()
                                 followUpInput = ""
+                                onDraftChanged("")
                                 onSendFollowUp(text)
                             }
                         },

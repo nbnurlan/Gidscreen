@@ -192,4 +192,9 @@
     <string name="settings_not_allowed">Not allowed</string>
     <string name="settings_key_saved_short">Saved</string>
     <string name="settings_key_missing_short">Not entered</string>
+    <string name="selection_confirm">Confirm</string>
+    <string name="selection_action">Select</string>
+    <string name="session_interrupted">The previous operation was interrupted. Select again or resend your question.</string>
+    <string name="session_save_failed">Unable to save the conversation. Check device storage.</string>
+    <string name="session_restore_failed">Unable to restore the conversation.</string>
 </resources>
