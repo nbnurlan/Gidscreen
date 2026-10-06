@@ -17,7 +17,6 @@ class LassoApplication : Application() {
         super.onCreate()
         LocaleHelper.init(this)
         com.example.network.GeminiKeyStore.init(this)
-        com.example.network.HuggingFaceKeyStore.init(this)
         com.example.network.GeminiModelManager.init(this)
         createNotificationChannel()
     }
