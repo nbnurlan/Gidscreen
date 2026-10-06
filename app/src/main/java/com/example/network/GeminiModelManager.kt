@@ -33,6 +33,13 @@ object GeminiModelManager {
     // Default built-in models matching the UI design in user's specification
     private val defaultModels = listOf(
         GeminiModelInfo(
+            id = "Qwen/Qwen3.8-27B",
+            displayName = "Qwen3.8-27B",
+            description = "Multimodal vision • reasoning • code via Hugging Face",
+            category = "Qwen 3.8",
+            isThinking = true
+        ),
+        GeminiModelInfo(
             id = "gemini-3.6-flash",
             displayName = "3.6 Flash",
             description = "All-around help",
@@ -85,7 +92,10 @@ object GeminiModelManager {
             try {
                 val parsed = parseModelsFromJson(cachedJson)
                 if (parsed.isNotEmpty()) {
-                    _availableModels.value = parsed
+                    val merged = LinkedHashMap<String, GeminiModelInfo>()
+                    defaultModels.forEach { merged[it.apiEndpointId] = it }
+                    parsed.forEach { merged[it.apiEndpointId] = it }
+                    _availableModels.value = merged.values.toList()
                 }
             } catch (e: Exception) {
                 e.printStackTrace()

@@ -197,6 +197,7 @@ fun SettingsContent(
                 onClick = { showLanguageDialog = true })
         }
         item { GeminiKeySettingsCard() }
+        item { HuggingFaceKeySettingsCard() }
         item {
             // Reading modelId subscribes this row to model changes.
             androidx.compose.runtime.key(modelId) {

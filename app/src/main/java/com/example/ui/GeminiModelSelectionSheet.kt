@@ -158,7 +158,7 @@ fun GeminiModelSelectionSheet(
                 }
             }
 
-            // Models list grouped by family (e.g., "Gemini 3", "Gemini 2.5")
+            // Models list grouped by provider/family
             val groupedModels = availableModels.groupBy { it.category }
 
             LazyColumn(
@@ -223,7 +223,7 @@ fun GeminiModelSelectionSheet(
                             )
                             Spacer(modifier = Modifier.width(10.dp))
                             Text(
-                                text = "GET v1beta/models • Yangi modellar avtomatik yangilanadi",
+                                text = "Gemini ro‘yxati Google API orqali yangilanadi • Qwen Hugging Face orqali ishlaydi",
                                 color = SoftMuted,
                                 fontSize = 11.sp
                             )

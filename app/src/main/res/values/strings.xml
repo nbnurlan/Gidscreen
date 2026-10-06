@@ -13,7 +13,7 @@
     <string name="btn_back">Back</string>
     <string name="settings_subtitle">Configure language, AI model and floating overlay</string>
     <string name="settings_section_general">General Preferences</string>
-    <string name="settings_section_ai">Gemini AI Model</string>
+    <string name="settings_section_ai">AI Model</string>
     <string name="settings_section_overlay">Floating Button &amp; Lens</string>
     <string name="settings_section_about">About &amp; Info</string>
     <string name="settings_overlay_tuck_info">You can drag the floating button to any screen position or drag to the screen edge to tuck it away.</string>
@@ -145,12 +145,12 @@
     <string name="toast_service_stopped">Service Stopped</string>
     <string name="error_no_projection">Screen capture permission not active. Please tap \'Grant &amp; Start Capture\' in the Screen Lasso app.</string>
     <string name="error_analyze_failed">Failed to analyze selection.</string>
-    <string name="error_general_gemini">Failed to analyze screen selection with Gemini AI.</string>
+    <string name="error_general_gemini">Failed to analyze screen selection with AI.</string>
     <string name="error_api_key_leaked">Your Gemini API key was reported as leaked and revoked by Google. Please enter a new GEMINI_API_KEY in Settings → Gemini API key.</string>
     <string name="error_api_key_invalid">Invalid or missing Gemini API key. Please check GEMINI_API_KEY in Settings → Gemini API key.</string>
 
     <!-- Gemini Model Selection BottomSheet -->
-    <string name="model_sheet_title">Select Gemini Model</string>
+    <string name="model_sheet_title">Select AI Model</string>
     <string name="model_sheet_refresh">Refresh from Gemini API</string>
     <string name="model_sheet_refreshing">Updating models list...</string>
     <string name="model_sheet_updated">Models updated from Gemini API</string>
@@ -192,6 +192,11 @@
     <string name="settings_not_allowed">Not allowed</string>
     <string name="settings_key_saved_short">Saved</string>
     <string name="settings_key_missing_short">Not entered</string>
+    <string name="hf_key_title">Hugging Face token</string>
+    <string name="hf_key_help">Qwen3.8-27B ni Hugging Face Inference Providers orqali ishlatish uchun inference ruxsatiga ega HF token kiriting. Token faqat shu qurilmada shifrlangan holda saqlanadi.</string>
+    <string name="hf_key_remove">Remove token</string>
+    <string name="hf_key_save">Save token</string>
+    <string name="hf_key_error">Could not save the Hugging Face token.</string>
     <string name="selection_confirm">Confirm</string>
     <string name="selection_action">Select</string>
     <string name="session_interrupted">The previous operation was interrupted. Select again or resend your question.</string>
