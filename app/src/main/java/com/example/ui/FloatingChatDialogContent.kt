@@ -46,7 +46,6 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.CropFree
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteOutline
-import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Key
@@ -247,14 +246,7 @@ fun FloatingChatDialogContent(
                     .padding(horizontal = 10.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Drag Handle & Title
-                Icon(
-                    imageVector = Icons.Default.DragHandle,
-                    contentDescription = stringResource(R.string.btn_drag_window),
-                    tint = SoftInk.copy(alpha = 0.5f),
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
+                // Title
                 Icon(
                     imageVector = Icons.Default.AutoAwesome,
                     contentDescription = null,
@@ -345,24 +337,7 @@ fun FloatingChatDialogContent(
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    // Item 1: Captured Screen Thumbnail (shown if not already in chat items)
-                    val thumb = when (analysisState) {
-                        is AnalysisState.Analyzing -> analysisState.thumbnail
-                        is AnalysisState.Success -> analysisState.thumbnail
-                        is AnalysisState.Error -> analysisState.thumbnail
-                        else -> null
-                    }
-
-                    if (thumb != null && visibleMessages.none { it.image != null }) {
-                        item {
-                            ScreenThumbnailCard(
-                                bitmap = thumb,
-                                onImageClick = { previewBitmap = thumb }
-                            )
-                        }
-                    }
-
-                    // Item 2: Loading State
+                    // Loading State
                     if (analysisState is AnalysisState.Analyzing) {
                         item {
                             AnalyzingStatusCard(rotation = rotation)
@@ -396,19 +371,6 @@ fun FloatingChatDialogContent(
                         )
                     }
 
-                    // Quick suggestion prompts if initial analysis succeeded and conversation has no user follow-up yet
-                    if (analysisState is AnalysisState.Success && visibleMessages.count { it.sender == MessageSender.USER } == 0) {
-                        item {
-                            QuickPromptsRow(
-                                isEnabled = !isAnalyzing,
-                                onPromptSelected = { prompt ->
-                                    if (!isAnalyzing) {
-                                        onSendFollowUp(prompt)
-                                    }
-                                }
-                            )
-                        }
-                    }
                 }
             }
 
