@@ -499,13 +499,6 @@ fun MainAppScreen(
                             }
                         }
                     },
-                    onNewSelectionRequested = {
-                        if (inAppAnalysisState !is AnalysisState.Analyzing &&
-                            inAppAnalysisState !is AnalysisState.Capturing) {
-                            showInAppChatDialog = false
-                            showInAppLasso = true
-                        }
-                    },
                     onRetry = {
                         inAppThumbnail?.let { bmp ->
                             inAppAnalysisState = AnalysisState.Analyzing(bmp)

@@ -191,7 +191,6 @@
     <string name="settings_key_saved_short">Saqlangan</string>
     <string name="settings_key_missing_short">Kiritilmagan</string>
     <string name="selection_confirm">Tasdiqlash</string>
-    <string name="selection_action">Tanlash</string>
     <string name="session_interrupted">Oldingi amal uzilib qoldi. Qayta tanlang yoki savolingizni qayta yuboring.</string>
     <string name="session_save_failed">Suhbatni saqlab bo‘lmadi. Telefon xotirasini tekshiring.</string>
     <string name="session_restore_failed">Suhbatni tiklab bo‘lmadi.</string>
