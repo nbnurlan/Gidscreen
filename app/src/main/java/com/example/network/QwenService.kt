@@ -2,6 +2,8 @@ package com.example.network
 
 import android.graphics.Bitmap
 import android.util.Base64
+import android.util.Log
+import com.example.BuildConfig
 import com.example.model.ChatMessage
 import com.example.model.MessageSender
 import com.example.util.LocaleHelper
@@ -19,6 +21,23 @@ import java.util.concurrent.TimeUnit
 object QwenService {
     const val MODEL_ID = "Qwen/Qwen3.8-27B"
     private const val CHAT_URL = "https://router.huggingface.co/v1/chat/completions"
+    private const val TAG = "QwenService"
+
+    private const val MAX_IMAGE_DIMENSION = 1280
+    private const val TARGET_JPEG_BYTES = 450_000
+    private const val MAX_REQUEST_BYTES = 2_500_000
+    private const val RECENT_HISTORY_LIMIT = 12
+
+    private val IMAGE_QUALITY_STEPS = intArrayOf(80, 70, 60)
+    private val IMAGE_DIMENSION_STEPS = intArrayOf(1280, 1024, 768, 640)
+
+    private data class EncodedImage(
+        val dataUrl: String,
+        val width: Int,
+        val height: Int,
+        val jpegBytes: Int,
+        val base64Bytes: Int
+    )
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(60, TimeUnit.SECONDS)
@@ -46,26 +65,79 @@ object QwenService {
         """.trimIndent()
     }
 
-    private fun bitmapToDataUrl(bitmap: Bitmap): String {
-        val maxDimension = 1280
-        val scaled = if (bitmap.width > maxDimension || bitmap.height > maxDimension) {
-            val ratio = bitmap.width.toFloat() / bitmap.height.toFloat()
-            val width: Int
-            val height: Int
-            if (ratio > 1f) {
-                width = maxDimension
-                height = (maxDimension / ratio).toInt().coerceAtLeast(1)
-            } else {
-                height = maxDimension
-                width = (maxDimension * ratio).toInt().coerceAtLeast(1)
-            }
-            Bitmap.createScaledBitmap(bitmap, width, height, true)
-        } else bitmap
+    private fun scaleToMaxDimension(bitmap: Bitmap, maxDimension: Int): Bitmap {
+        if (bitmap.width <= maxDimension && bitmap.height <= maxDimension) return bitmap
 
-        val stream = ByteArrayOutputStream()
-        scaled.compress(Bitmap.CompressFormat.JPEG, 85, stream)
-        val base64 = Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
-        return "data:image/jpeg;base64,$base64"
+        val ratio = bitmap.width.toFloat() / bitmap.height.toFloat()
+        val width: Int
+        val height: Int
+        if (ratio > 1f) {
+            width = maxDimension
+            height = (maxDimension / ratio).toInt().coerceAtLeast(1)
+        } else {
+            height = maxDimension
+            width = (maxDimension * ratio).toInt().coerceAtLeast(1)
+        }
+        return Bitmap.createScaledBitmap(bitmap, width, height, true)
+    }
+
+    private fun compressJpeg(bitmap: Bitmap, quality: Int): ByteArray {
+        return ByteArrayOutputStream().use { stream ->
+            bitmap.compress(Bitmap.CompressFormat.JPEG, quality, stream)
+            stream.toByteArray()
+        }
+    }
+
+    private fun bitmapToDataUrl(bitmap: Bitmap): String {
+        var lastEncoded: EncodedImage? = null
+
+        IMAGE_DIMENSION_STEPS.forEachIndexed { dimensionIndex, maxDimension ->
+            val boundedDimension = maxDimension.coerceAtMost(MAX_IMAGE_DIMENSION)
+            val scaled = scaleToMaxDimension(bitmap, boundedDimension)
+            val qualities = if (dimensionIndex == 0) IMAGE_QUALITY_STEPS else intArrayOf(60)
+
+            try {
+                for (quality in qualities) {
+                    val jpeg = compressJpeg(scaled, quality)
+                    val base64 = Base64.encodeToString(jpeg, Base64.NO_WRAP)
+                    val encoded = EncodedImage(
+                        dataUrl = "data:image/jpeg;base64,$base64",
+                        width = scaled.width,
+                        height = scaled.height,
+                        jpegBytes = jpeg.size,
+                        base64Bytes = base64.toByteArray(Charsets.UTF_8).size
+                    )
+                    lastEncoded = encoded
+
+                    if (jpeg.size <= TARGET_JPEG_BYTES) {
+                        if (BuildConfig.DEBUG) {
+                            Log.d(
+                                TAG,
+                                "HF image ${bitmap.width}x${bitmap.height} -> " +
+                                    "${encoded.width}x${encoded.height}, jpeg=${encoded.jpegBytes}B, " +
+                                    "base64=${encoded.base64Bytes}B, quality=$quality"
+                            )
+                        }
+                        return encoded.dataUrl
+                    }
+                }
+            } finally {
+                if (scaled !== bitmap && !scaled.isRecycled) {
+                    scaled.recycle()
+                }
+            }
+        }
+
+        val fallback = requireNotNull(lastEncoded)
+        if (BuildConfig.DEBUG) {
+            Log.d(
+                TAG,
+                "HF image ${bitmap.width}x${bitmap.height} -> " +
+                    "${fallback.width}x${fallback.height}, jpeg=${fallback.jpegBytes}B, " +
+                    "base64=${fallback.base64Bytes}B, fallback=true"
+            )
+        }
+        return fallback.dataUrl
     }
 
     private fun multimodalContent(text: String, bitmap: Bitmap?): Any {
@@ -84,13 +156,113 @@ object QwenService {
         }
     }
 
+    private fun buildMessages(
+        history: List<ChatMessage>,
+        newQuestion: String,
+        bitmap: Bitmap?,
+        includeHistoryImages: Boolean
+    ): JSONArray {
+        return JSONArray().apply {
+            put(JSONObject().apply {
+                put("role", "system")
+                put("content", systemInstruction())
+            })
+
+            history.forEach { msg ->
+                if (msg.sender == MessageSender.SYSTEM) return@forEach
+                val role = if (msg.sender == MessageSender.USER) "user" else "assistant"
+                put(JSONObject().apply {
+                    put("role", role)
+                    if (msg.sender == MessageSender.USER) {
+                        val historyBitmap = if (includeHistoryImages) msg.image else null
+                        put("content", multimodalContent(msg.text, historyBitmap))
+                    } else {
+                        put("content", msg.text)
+                    }
+                })
+            }
+
+            put(JSONObject().apply {
+                put("role", "user")
+                put("content", multimodalContent(newQuestion, bitmap))
+            })
+        }
+    }
+
+    private fun buildBody(messages: JSONArray): JSONObject {
+        return JSONObject().apply {
+            put("model", MODEL_ID)
+            put("messages", messages)
+            put("max_tokens", 2048)
+        }
+    }
+
+    private fun requestSizeBytes(body: JSONObject): Int =
+        body.toString().toByteArray(Charsets.UTF_8).size
+
+    private fun buildSizeSafeBody(
+        history: List<ChatMessage>,
+        newQuestion: String,
+        bitmap: Bitmap?
+    ): JSONObject {
+        var body = buildBody(
+            buildMessages(
+                history = history,
+                newQuestion = newQuestion,
+                bitmap = bitmap,
+                includeHistoryImages = true
+            )
+        )
+
+        if (requestSizeBytes(body) <= MAX_REQUEST_BYTES) {
+            return body
+        }
+
+        if (BuildConfig.DEBUG) {
+            Log.d(TAG, "HF request too large with history images: ${requestSizeBytes(body)}B")
+        }
+
+        body = buildBody(
+            buildMessages(
+                history = history,
+                newQuestion = newQuestion,
+                bitmap = bitmap,
+                includeHistoryImages = false
+            )
+        )
+
+        if (requestSizeBytes(body) <= MAX_REQUEST_BYTES) {
+            if (BuildConfig.DEBUG) {
+                Log.d(TAG, "HF request reduced by omitting historical image payloads: ${requestSizeBytes(body)}B")
+            }
+            return body
+        }
+
+        val recentHistory = history.takeLast(RECENT_HISTORY_LIMIT)
+        body = buildBody(
+            buildMessages(
+                history = recentHistory,
+                newQuestion = newQuestion,
+                bitmap = bitmap,
+                includeHistoryImages = false
+            )
+        )
+
+        if (BuildConfig.DEBUG) {
+            Log.d(TAG, "HF request reduced to recent text history: ${requestSizeBytes(body)}B")
+        }
+        return body
+    }
+
     private fun errorFrom(code: Int, body: String?): Exception {
         val message = try {
             JSONObject(body ?: "").optJSONObject("error")?.optString("message")
         } catch (_: Exception) { null }
+
         return when (code) {
             401, 403 -> Exception("Hugging Face token yaroqsiz yoki inference ruxsati yo‘q.")
             402 -> Exception("Hugging Face inference krediti tugagan yoki billing talab qilinadi.")
+            413 -> Exception("Rasm hajmi juda katta. Kichikroq hududni belgilang yoki qayta urinib ko‘ring.")
             429 -> Exception("Hugging Face so‘rov limiti vaqtincha oshib ketdi. Birozdan keyin qayta urinib ko‘ring.")
             else -> Exception(message?.takeIf { it.isNotBlank() } ?: "Hugging Face API xatosi ($code)")
         }
@@ -117,42 +289,22 @@ object QwenService {
         }
 
         try {
-            val messages = JSONArray().apply {
-                put(JSONObject().apply {
-                    put("role", "system")
-                    put("content", systemInstruction())
-                })
+            val body = buildSizeSafeBody(
+                history = history,
+                newQuestion = newQuestion,
+                bitmap = bitmap
+            )
+            val bodyText = body.toString()
 
-                history.forEach { msg ->
-                    if (msg.sender == MessageSender.SYSTEM) return@forEach
-                    val role = if (msg.sender == MessageSender.USER) "user" else "assistant"
-                    put(JSONObject().apply {
-                        put("role", role)
-                        if (msg.sender == MessageSender.USER) {
-                            put("content", multimodalContent(msg.text, msg.image))
-                        } else {
-                            put("content", msg.text)
-                        }
-                    })
-                }
-
-                put(JSONObject().apply {
-                    put("role", "user")
-                    put("content", multimodalContent(newQuestion, bitmap))
-                })
-            }
-
-            val body = JSONObject().apply {
-                put("model", MODEL_ID)
-                put("messages", messages)
-                put("max_tokens", 2048)
+            if (BuildConfig.DEBUG) {
+                Log.d(TAG, "HF request body size=${bodyText.toByteArray(Charsets.UTF_8).size}B")
             }
 
             val request = Request.Builder()
                 .url(CHAT_URL)
                 .header("Authorization", "Bearer $token")
                 .header("Content-Type", "application/json")
-                .post(body.toString().toRequestBody("application/json".toMediaType()))
+                .post(bodyText.toRequestBody("application/json".toMediaType()))
                 .build()
 
             client.newCall(request).execute().use { response ->
