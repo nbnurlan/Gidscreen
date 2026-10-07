@@ -193,7 +193,6 @@ class LassoOverlayService : Service() {
             restoringSession = false
             showFloatingBubble()
             if (windowState.getBoolean("open", false)) {
-                bubbleView?.visibility = View.GONE
                 showFloatingChatDialog()
             }
             if (openSelectionAfterRestore) {
@@ -317,15 +316,14 @@ class LassoOverlayService : Service() {
         var isDragging = false
         val touchSlop = ViewConfiguration.get(this).scaledTouchSlop
         var touchStartTime = 0L
-        var startedDocked = false
 
+        view.setOnClickListener { showSelectionOverlay() }
         view.setOnTouchListener { v, event ->
             val currentParams = bubbleParams ?: return@setOnTouchListener false
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     bubbleIdleJob?.cancel()
-                    startedDocked = bubbleDocked.value
-                    if (startedDocked) expandBubble()
+                    if (bubbleDocked.value) expandBubble()
                     initialX = currentParams.x
                     initialY = currentParams.y
                     initialTouchX = event.rawX
@@ -369,10 +367,6 @@ class LassoOverlayService : Service() {
                     if (!isDragging && dx <= touchSlop && dy <= touchSlop && duration < 400) {
                         // Bir marta oddiy bosilganda (click) avvalgi amali (ekranni belgilash) chaqiriladi
                         v.performClick()
-                        if (startedDocked) scheduleBubbleDock() else {
-                            bubbleView?.visibility = View.GONE
-                            showFloatingChatDialog()
-                        }
                     } else {
                         // Siljitish tugagach qo'yilgan joyda saqlanadi
                         val dm = resources.displayMetrics
@@ -500,9 +494,8 @@ class LassoOverlayService : Service() {
         if (restoreBubble) {
             if (chatView != null) {
                 chatView?.visibility = View.VISIBLE
-            } else {
-                restoreFloatingBubble()
             }
+            restoreFloatingBubble()
         }
     }
 
@@ -615,9 +608,9 @@ class LassoOverlayService : Service() {
                 return@launch
             }
 
-            // Immediately show floating chat window and trigger multi-turn AI analysis
+            // Keep the same chat attached but hidden until this capture has an answer.
             analysisState.value = AnalysisState.Analyzing(croppedBitmap)
-            showFloatingChatDialog()
+            restoreFloatingBubble()
 
             val captureNumber = chatMessages.count { it.image != null } + 1
             val currentLang = LocaleHelper.currentLanguage.value
@@ -667,6 +660,7 @@ class LassoOverlayService : Service() {
                 )
             }
             persistSession()
+            showFloatingChatDialog()
         }
     }
 
@@ -677,6 +671,7 @@ class LassoOverlayService : Service() {
         windowState.edit().putBoolean("open", true).apply()
         if (chatView != null) {
             chatView?.visibility = View.VISIBLE
+            restoreFloatingBubble()
             return
         }
 
@@ -696,6 +691,7 @@ class LassoOverlayService : Service() {
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.CENTER
+            softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
             width = windowState.getInt("width", defaultWidth).coerceIn(1, metrics.widthPixels)
             height = windowState.getInt("height", defaultHeight).coerceIn(1, metrics.heightPixels)
             x = windowState.getInt("x", 0).coerceIn(-(metrics.widthPixels - width) / 2, (metrics.widthPixels - width) / 2)
@@ -715,9 +711,6 @@ class LassoOverlayService : Service() {
                         chatMessages = chatMessages,
                         onSendFollowUp = { question ->
                             handleFollowUp(question)
-                        },
-                        onNewSelectionRequested = {
-                            showSelectionOverlay()
                         },
                         onRetry = {
                             val bmp = currentBitmap
@@ -770,6 +763,14 @@ class LassoOverlayService : Service() {
         try {
             windowManager.addView(view, params)
             chatView = view
+            // Separate overlay windows have their own Z order. Keep the selector tappable
+            // even when its position overlaps the newly attached chat window.
+            bubbleView?.let { bubble ->
+                val bp = bubbleParams ?: return@let
+                windowManager.removeViewImmediate(bubble)
+                windowManager.addView(bubble, bp)
+            }
+            restoreFloatingBubble()
         } catch (e: Exception) {
             e.printStackTrace()
         }

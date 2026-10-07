@@ -22,7 +22,7 @@ object GeminiModelManager {
     private const val KEY_SELECTED_MODEL = "key_selected_gemini_model"
     private const val KEY_CACHED_MODELS_JSON = "key_cached_models_json"
 
-    const val DEFAULT_MODEL_ID = "gemini-3.6-flash"
+    const val DEFAULT_MODEL_ID = "gemini-2.5-flash"
     private const val MODELS_LIST_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 
     private val httpClient = OkHttpClient.Builder()

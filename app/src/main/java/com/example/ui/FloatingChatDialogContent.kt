@@ -62,7 +62,6 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -103,7 +102,6 @@ fun FloatingChatDialogContent(
     analysisState: AnalysisState,
     chatMessages: List<ChatMessage>,
     onSendFollowUp: (String) -> Unit,
-    onNewSelectionRequested: () -> Unit,
     onRetry: () -> Unit,
     onClose: () -> Unit,
     onDragDelta: (Float, Float) -> Unit,
@@ -121,16 +119,18 @@ fun FloatingChatDialogContent(
     val isAnalyzing = analysisState is AnalysisState.Analyzing || analysisState is AnalysisState.Capturing
     val listState = rememberLazyListState()
 
-    val visibleMessages = remember(chatMessages.size, chatMessages.count { it.isVisible }) {
-        chatMessages.filter { isVisibleChatMessage(it) }
-    }
-
-    // Auto scroll on new message
-    LaunchedEffect(visibleMessages.size, analysisState) {
-        if (visibleMessages.isNotEmpty()) {
-            listState.animateScrollToItem(visibleMessages.size)
-        }
-    }
+    val visibleMessages = chatMessages.filter { isVisibleChatMessage(it) }
+    val hasStatus = analysisState is AnalysisState.Analyzing || analysisState is AnalysisState.Error
+    val scrollModifier = rememberChatAutoScroll(
+        listState = listState,
+        latestMessage = chatMessages.lastOrNull(),
+        latestCaptureId = chatMessages.lastOrNull { it.image != null }?.id,
+        targetIndex = if (visibleMessages.lastOrNull()?.id == chatMessages.lastOrNull()?.id) {
+            visibleMessages.lastIndex
+        } else if (hasStatus) visibleMessages.size else visibleMessages.lastIndex,
+        itemCount = visibleMessages.size + if (hasStatus) 1 else 0,
+        expanded = !isMinimized
+    )
 
     val infiniteTransition = rememberInfiniteTransition(label = "loadingRotate")
     val rotation by infiniteTransition.animateFloat(
@@ -284,20 +284,6 @@ fun FloatingChatDialogContent(
                     }
                 }
 
-                // New Selection Action
-                androidx.compose.material3.TextButton(
-                    onClick = onNewSelectionRequested,
-                    enabled = !isAnalyzing
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CropFree,
-                        contentDescription = stringResource(R.string.btn_new_selection),
-                        tint = if (!isAnalyzing) SoftPrimary else SoftPrimary.copy(alpha = 0.3f),
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Text(stringResource(R.string.selection_action), fontSize = 11.sp)
-                }
-
                 // Minimize Button
                 IconButton(
                     onClick = { isMinimized = true },
@@ -336,26 +322,11 @@ fun FloatingChatDialogContent(
                     state = listState,
                     modifier = Modifier
                         .fillMaxSize()
+                        .then(scrollModifier)
+                        .testTag("chat_messages")
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    // Loading State
-                    if (analysisState is AnalysisState.Analyzing) {
-                        item {
-                            AnalyzingStatusCard(rotation = rotation)
-                        }
-                    }
-
-                    // Item 3: Error State
-                    if (analysisState is AnalysisState.Error) {
-                        item {
-                            ErrorCard(
-                                message = analysisState.message,
-                                onRetry = onRetry
-                            )
-                        }
-                    }
-
                     // Chat messages (Initial AI answer + multi-turn history)
                     items(visibleMessages, key = { it.id }) { message ->
                         val copiedToastText = stringResource(R.string.toast_copied)
@@ -371,6 +342,23 @@ fun FloatingChatDialogContent(
                                 previewBitmap = img
                             }
                         )
+                    }
+
+                    // Loading State
+                    if (analysisState is AnalysisState.Analyzing) {
+                        item(key = "chat_status") {
+                            AnalyzingStatusCard(rotation = rotation)
+                        }
+                    }
+
+                    // Item 3: Error State
+                    if (analysisState is AnalysisState.Error) {
+                        item(key = "chat_status") {
+                            ErrorCard(
+                                message = analysisState.message,
+                                onRetry = onRetry
+                            )
+                        }
                     }
 
                 }
