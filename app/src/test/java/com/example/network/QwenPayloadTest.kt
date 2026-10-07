@@ -82,14 +82,19 @@ class QwenPayloadTest {
                 false
             ) as JSONArray
 
-            val serialized = messages.toString()
-            val imageOccurrences = "data:image/jpeg;base64,".toRegex()
-                .findAll(serialized)
-                .count()
+            val historicalUserContent = messages.getJSONObject(1).get("content")
+            val historicalAiContent = messages.getJSONObject(2).get("content")
+            val currentContent = messages.getJSONObject(3).getJSONArray("content")
 
-            assertEquals(1, imageOccurrences)
-            assertTrue(serialized.contains("Earlier capture"))
-            assertTrue(serialized.contains("Earlier answer"))
+            assertEquals("Earlier capture", historicalUserContent)
+            assertEquals("Earlier answer", historicalAiContent)
+            assertEquals("image_url", currentContent.getJSONObject(0).getString("type"))
+            assertTrue(
+                currentContent.getJSONObject(0)
+                    .getJSONObject("image_url")
+                    .getString("url")
+                    .startsWith("data:image/jpeg;base64,")
+            )
         } finally {
             historical.recycle()
             current.recycle()
