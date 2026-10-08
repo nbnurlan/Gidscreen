@@ -608,9 +608,7 @@ class LassoOverlayService : Service() {
                 return@launch
             }
 
-            // Keep the same chat attached but hidden until this capture has an answer.
             analysisState.value = AnalysisState.Analyzing(croppedBitmap)
-            restoreFloatingBubble()
 
             val captureNumber = chatMessages.count { it.image != null } + 1
             val currentLang = LocaleHelper.currentLanguage.value
@@ -631,6 +629,8 @@ class LassoOverlayService : Service() {
                 isVisible = false // Hidden from chat UI: sent in background to Gemini
             )
             chatMessages.add(userMsg)
+            // Capture is complete: show the existing chat and its loading state before any I/O.
+            showFloatingChatDialog()
             persistSession()
 
             // Continue persistent multi-turn conversation with all previous context + new capture
@@ -660,7 +660,6 @@ class LassoOverlayService : Service() {
                 )
             }
             persistSession()
-            showFloatingChatDialog()
         }
     }
 
