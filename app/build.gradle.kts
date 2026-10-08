@@ -19,8 +19,8 @@ android {
     applicationId = "com.aistudio.screenlasso.aiwzqp"
     minSdk = 24
     targetSdk = 36
-    versionCode = 10
-    versionName = "1.2.8"
+    versionCode = 11
+    versionName = "1.2.9"
     manifestPlaceholders["appLabel"] = "@string/app_name"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
