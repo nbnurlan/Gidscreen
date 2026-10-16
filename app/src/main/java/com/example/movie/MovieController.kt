@@ -15,7 +15,9 @@ class MovieController(
     private val context: Context,
     private val scope: CoroutineScope,
     private val captureVisibility: (Boolean) -> Unit,
-    private val notify: (String) -> Unit
+    private val notify: (String) -> Unit,
+    private val api: MovieGateway = MovieApi(),
+    private val captureOverride: (suspend () -> String?)? = null
 ) {
     val session = MovieSession(context)
     var active by mutableStateOf(false); private set
@@ -24,10 +26,9 @@ class MovieController(
     var candidates by mutableStateOf<List<MovieCandidate>>(emptyList()); private set
     var revision by mutableIntStateOf(0); private set
     val ready: Boolean get() = active && confirmedThisRun && session.movie != null
-    private val api = MovieApi()
     private var job: Job? = null
     private var scene: String? = null
-    private var confirmedThisRun = false
+    private var confirmedThisRun by mutableStateOf(false)
 
     private fun status(id: Int) { status = context.getString(id); notify(status) }
     private fun persist() { session.save(); revision++ }
@@ -47,6 +48,7 @@ class MovieController(
     fun projectionStopped() { if (active) stop() }
 
     private suspend fun frame(): String? {
+        captureOverride?.let { return it() }
         if (!active || !MediaProjectionHolder.isProjectionActive.value) return null
         if ((context.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager).isKeyguardLocked) return null
         captureVisibility(false)
@@ -105,7 +107,11 @@ class MovieController(
         notify(status)
     }
     private suspend fun ensureActiveContext() { currentCoroutineContext().ensureActive(); check(active) }
-    fun spoiler(value: Boolean) { session.spoilerFree = value; persist() }
+    fun spoiler(value: Boolean) {
+        // Previously revealed spoilers must not become alleged watched context on re-enabling protection.
+        if (value && !session.spoilerFree) session.turns.clear()
+        session.spoilerFree = value; persist()
+    }
     fun ask(question: String) {
         if (question.isBlank() || session.movie == null || !confirmedThisRun) return
         launch {

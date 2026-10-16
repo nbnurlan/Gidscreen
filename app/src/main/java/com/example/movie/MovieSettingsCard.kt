@@ -15,11 +15,14 @@ import com.example.service.LassoOverlayService
 @Composable
 fun MovieSettingsCard() {
     val context = LocalContext.current
+    val active by LassoOverlayService.isMovieActive.collectAsState()
     var consent by remember { mutableStateOf(false) }
     Column {
         Text("AI Movie Mode")
         Text(stringResource(R.string.movie_consent))
-        Button(enabled = Build.VERSION.SDK_INT >= 29, onClick = { consent = true }) { Text(stringResource(R.string.movie_start)) }
+        Switch(checked = active, enabled = Build.VERSION.SDK_INT >= 29, onCheckedChange = { enabled ->
+            if (enabled) consent = true else context.stopService(Intent(context, LassoOverlayService::class.java))
+        })
         TextButton(onClick = { context.stopService(Intent(context, LassoOverlayService::class.java)) }) { Text(stringResource(R.string.movie_stop)) }
         TmdbKeySettingsCard()
     }

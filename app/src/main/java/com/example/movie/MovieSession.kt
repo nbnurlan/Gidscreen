@@ -28,6 +28,7 @@ class MovieSession(context: Context) {
         } catch (_: Exception) { movie = null; metadata = ""; turns.clear() }
     }
     fun save() {
+        while (turns.size > 200) turns.removeAt(0)
         val root = JSONObject().put("metadata", metadata).put("spoilerFree", spoilerFree)
             .put("turns", JSONArray(turns.takeLast(200).map { JSONObject().put("role", it.role).put("text", it.text) }))
         movie?.let { root.put("movie", it.json()) }
@@ -35,5 +36,5 @@ class MovieSession(context: Context) {
         try { out.write(root.toString().toByteArray()); file.finishWrite(out) }
         catch (e: Exception) { file.failWrite(out); throw e }
     }
-    fun reset() { movie = null; metadata = ""; turns.clear(); save() }
+    fun reset() { movie = null; metadata = ""; spoilerFree = true; turns.clear(); save() }
 }

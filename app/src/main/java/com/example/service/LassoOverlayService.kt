@@ -74,8 +74,9 @@ class LassoOverlayService : Service() {
                     val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
                     movieView?.let { imm.hideSoftInputFromWindow(it.windowToken, 0); it.clearFocus() }
                 }
-            }, notify = { startForegroundNotification() })
+            }, notify = { if (movieController?.active == true) startForegroundNotification() })
         movieController?.start()
+        _isMovieActive.value = true
         startForegroundNotification()
     }
 
@@ -946,6 +947,7 @@ class LassoOverlayService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        _isMovieActive.value = false
         movieController?.stop()
         closeMoviePanel()
         serviceScope.cancel()
@@ -967,6 +969,9 @@ class LassoOverlayService : Service() {
         const val ACTION_START_MOVIE = "com.example.service.ACTION_START_MOVIE"
         const val ACTION_STOP_SERVICE = "com.example.service.ACTION_STOP"
         const val ACTION_OPEN_SELECTION = "com.example.service.ACTION_OPEN_SELECTION"
+
+        private val _isMovieActive = MutableStateFlow(false)
+        val isMovieActive: StateFlow<Boolean> = _isMovieActive.asStateFlow()
 
         private val _isRunning = MutableStateFlow(false)
         val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()

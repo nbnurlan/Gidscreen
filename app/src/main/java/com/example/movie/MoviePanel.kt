@@ -25,7 +25,7 @@ fun MoviePanel(controller: MovieController, close: () -> Unit, stop: () -> Unit)
         Column(Modifier.fillMaxSize().padding(12.dp)) {
             Row { Text("AI Movie Mode", Modifier.weight(1f)); TextButton(onClick = close) { Text(stringResource(R.string.movie_close)) } }
             Text(controller.status, style = MaterialTheme.typography.bodySmall)
-            controller.session.movie?.let { Text("${it.title} (${it.year}) · TMDB #${it.id}") }
+            controller.session.movie?.takeIf { controller.ready }?.let { Text("${it.title} (${it.year}) · TMDB #${it.id}") }
             if (controller.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
             Row {
                 TextButton(onClick = stop) { Text(stringResource(R.string.movie_stop)) }
