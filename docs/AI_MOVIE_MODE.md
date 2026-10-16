@@ -36,6 +36,8 @@ uninstall production Gidscreen.
 - Existing MediaProjection holder and single virtual display are reused. No Accessibility,
   microphone, audio capture, DRM bypass or background auto-restart is added.
 - Bounded three-frame recognition; no continuous polling or automatic API retries.
+  The existing virtual-display surface is detached between Movie Mode frame requests;
+  cached full-screen pixels are recycled, reducing idle frame conversion and memory use.
 - JPEG images capped at 768px, quality 65, at most three per recognition and one per question.
   Frames live in memory only. Text history (last 200 messages) is separately stored atomically
   in no-backup storage; at most 12 bounded messages go to the model on each question.

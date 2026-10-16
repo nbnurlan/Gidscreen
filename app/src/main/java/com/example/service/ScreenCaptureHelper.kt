@@ -44,6 +44,8 @@ object ScreenCaptureHelper {
     private var captureRequestedTimestamp: Long = 0L
     private var pendingContinuation: CancellableContinuation<Bitmap?>? = null
 
+    private var framesPaused = false
+
     private var currentWidth: Int = 0
     private var currentHeight: Int = 0
     private var currentDensity: Int = 0
@@ -90,7 +92,7 @@ object ScreenCaptureHelper {
                         val captureHandler = handler ?: return false
                         replacement = createImageReader(width, height, captureHandler)
                         virtualDisplay?.resize(width, height, density)
-                        virtualDisplay?.surface = replacement.surface
+                        virtualDisplay?.surface = if (framesPaused) null else replacement.surface
                         imageReader = replacement
                         currentWidth = width
                         currentHeight = height
@@ -170,6 +172,7 @@ object ScreenCaptureHelper {
                 var image: Image? = null
                 try {
                     image = source.acquireLatestImage() ?: return@setOnImageAvailableListener
+                    if (framesPaused) return@setOnImageAvailableListener
                     val bitmap = convertImageToBitmap(image, image.width, image.height)
                         ?: return@setOnImageAvailableListener
                     latestBitmap?.recycle()
@@ -336,6 +339,7 @@ object ScreenCaptureHelper {
         // This does not create a second VirtualDisplay or consume another consent token.
         synchronized(sessionLock) {
             try {
+                framesPaused = false
                 virtualDisplay?.surface = null
                 virtualDisplay?.surface = imageReader?.surface
             } catch (error: Exception) {
@@ -386,6 +390,17 @@ object ScreenCaptureHelper {
         null
     }
 
+    /** Movie mode stops the frame pump between requests without consuming a new consent token. */
+    fun pauseFrames() {
+        synchronized(sessionLock) {
+            framesPaused = true
+            try { virtualDisplay?.surface = null } catch (_: Exception) {}
+            latestBitmap?.recycle()
+            latestBitmap = null
+            latestBitmapTimestamp = 0L
+        }
+    }
+
     fun release() {
         synchronized(sessionLock) {
             cleanupInternal()
@@ -394,6 +409,7 @@ object ScreenCaptureHelper {
     }
 
     private fun cleanupInternal() {
+        framesPaused = false
         try {
             currentProjection?.unregisterCallback(projectionCallback)
         } catch (_: Exception) {}

@@ -77,6 +77,7 @@ class LassoOverlayService : Service() {
             }, notify = { if (movieController?.active == true) startForegroundNotification() })
         movieController?.start()
         _isMovieActive.value = true
+        ScreenCaptureHelper.pauseFrames()
         startForegroundNotification()
     }
 

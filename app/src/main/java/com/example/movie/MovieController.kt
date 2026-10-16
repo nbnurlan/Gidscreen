@@ -58,7 +58,7 @@ class MovieController(
             val (w, h, _) = ScreenCaptureHelper.getRealScreenMetrics(context)
             val bitmap = ScreenCaptureHelper.captureArea(context, projection, null, RectF(0f, 0f, w.toFloat(), h.toFloat()), System.nanoTime()) ?: return null
             try { MovieApi.encode(bitmap) } finally { bitmap.recycle() }
-        } finally { captureVisibility(true) }
+        } finally { ScreenCaptureHelper.pauseFrames(); captureVisibility(true) }
     }
 
     private fun launch(block: suspend () -> Unit) {
