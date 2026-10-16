@@ -59,6 +59,56 @@ import kotlinx.coroutines.withContext
 
 class LassoOverlayService : Service() {
 
+    private var movieController: com.example.movie.MovieController? = null
+    private var movieView: ComposeView? = null
+    private var movieOwner: OverlayLifecycleOwner? = null
+
+    private fun startMovieMode() {
+        hideFloatingChatDialog()
+        dismissSelectionOverlay(false)
+        if (movieController == null) movieController = com.example.movie.MovieController(this, serviceScope,
+            captureVisibility = { visible ->
+                bubbleView?.visibility = if (visible) View.VISIBLE else View.INVISIBLE
+                movieView?.visibility = if (visible) View.VISIBLE else View.INVISIBLE
+                if (!visible) {
+                    val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+                    movieView?.let { imm.hideSoftInputFromWindow(it.windowToken, 0); it.clearFocus() }
+                }
+            }, notify = { startForegroundNotification() })
+        movieController?.start()
+        startForegroundNotification()
+    }
+
+    private fun closeMoviePanel() {
+        movieView?.let { try { windowManager.removeView(it) } catch (_: Exception) {} }
+        movieView = null
+        movieOwner?.onDestroy(); movieOwner = null
+    }
+
+    private fun showMoviePanel() {
+        if (movieView != null) return
+        val controller = movieController ?: return
+        val owner = OverlayLifecycleOwner().also { it.onCreate() }
+        movieOwner = owner
+        val view = ComposeView(ContextThemeWrapper(this, R.style.Theme_MyApplication)).apply {
+            owner.attachToView(this)
+            setContent {
+                MyApplicationTheme(darkTheme = false, dynamicColor = false) {
+                    com.example.movie.MoviePanel(controller, close = { closeMoviePanel() }, stop = { stopSelf() })
+                }
+            }
+        }
+        val metrics = resources.displayMetrics
+        val params = WindowManager.LayoutParams((metrics.widthPixels * .94f).toInt(),
+            (metrics.heightPixels * .8f).toInt(), WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL, PixelFormat.TRANSLUCENT).apply {
+            gravity = Gravity.CENTER
+            softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
+        }
+        movieView = view
+        windowManager.addView(view, params); owner.onStart()
+    }
+
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(LocaleHelper.wrapContext(newBase))
     }
@@ -192,7 +242,7 @@ class LassoOverlayService : Service() {
             }
             restoringSession = false
             showFloatingBubble()
-            if (windowState.getBoolean("open", false)) {
+            if (movieController?.active != true && windowState.getBoolean("open", false)) {
                 showFloatingChatDialog()
             }
             if (openSelectionAfterRestore) {
@@ -201,6 +251,14 @@ class LassoOverlayService : Service() {
             }
         }
 
+        serviceScope.launch {
+            MediaProjectionHolder.isProjectionActive.collect { active ->
+                if (!active && movieController?.active == true) {
+                    movieController?.projectionStopped()
+                    stopSelf()
+                }
+            }
+        }
         // Warm up MediaProjection and VirtualDisplay session if available
         val projectionManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
         val projection = MediaProjectionHolder.mediaProjection ?: MediaProjectionHolder.obtainMediaProjection(projectionManager)
@@ -216,6 +274,7 @@ class LassoOverlayService : Service() {
                 stopSelf()
                 return START_NOT_STICKY
             }
+            ACTION_START_MOVIE -> { startMovieMode() }
             ACTION_OPEN_SELECTION -> {
                 if (restoringSession) openSelectionAfterRestore = true else showSelectionOverlay()
             }
@@ -254,7 +313,7 @@ class LassoOverlayService : Service() {
 
         val notification: Notification = NotificationCompat.Builder(this, LassoApplication.CHANNEL_ID)
             .setContentTitle(getString(R.string.notification_title))
-            .setContentText(getString(R.string.notification_text))
+            .setContentText(movieController?.takeIf { it.active }?.status ?: getString(R.string.notification_text))
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentIntent(openAppPendingIntent)
             .addAction(0, getString(R.string.btn_stop_service), stopPendingIntent)
@@ -317,7 +376,7 @@ class LassoOverlayService : Service() {
         val touchSlop = ViewConfiguration.get(this).scaledTouchSlop
         var touchStartTime = 0L
 
-        view.setOnClickListener { showSelectionOverlay() }
+        view.setOnClickListener { if (movieController?.active == true) showMoviePanel() else showSelectionOverlay() }
         view.setOnTouchListener { v, event ->
             val currentParams = bubbleParams ?: return@setOnTouchListener false
             when (event.action) {
@@ -421,6 +480,7 @@ class LassoOverlayService : Service() {
     // Feature 2: Fullscreen Custom Freehand/Lasso Screen Selection
     // -------------------------------------------------------------
     private fun showSelectionOverlay() {
+        if (movieController?.active == true) { showMoviePanel(); return }
         if (restoringSession || selectionView != null || analysisState.value is AnalysisState.Analyzing ||
             analysisState.value is AnalysisState.Capturing) return
 
@@ -854,6 +914,7 @@ class LassoOverlayService : Service() {
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
+        closeMoviePanel()
         super.onConfigurationChanged(newConfig)
         val wasSelecting = selectionView != null
         if (wasSelecting) {
@@ -885,6 +946,8 @@ class LassoOverlayService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        movieController?.stop()
+        closeMoviePanel()
         serviceScope.cancel()
 
         hideFloatingBubble()
@@ -901,6 +964,7 @@ class LassoOverlayService : Service() {
     }
 
     companion object {
+        const val ACTION_START_MOVIE = "com.example.service.ACTION_START_MOVIE"
         const val ACTION_STOP_SERVICE = "com.example.service.ACTION_STOP"
         const val ACTION_OPEN_SELECTION = "com.example.service.ACTION_OPEN_SELECTION"
 
