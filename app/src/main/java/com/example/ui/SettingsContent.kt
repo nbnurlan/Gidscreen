@@ -196,6 +196,7 @@ fun SettingsContent(
                 LocaleHelper.supportedLanguages.find { it.code == currentLang }?.nativeName ?: currentLang,
                 onClick = { showLanguageDialog = true })
         }
+        item { com.example.movie.MovieSettingsCard() }
         item { GeminiKeySettingsCard() }
         item { HuggingFaceKeySettingsCard() }
         item {

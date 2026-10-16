@@ -1,0 +1,23 @@
+<resources>
+    <string name="movie_stopped">Kuzatuv to‘xtatilgan</string>
+    <string name="movie_preparing">10 soniyada aniqlash boshlanadi — kinoga qayting</string>
+    <string name="movie_identifying">Kadrlar olinmoqda va film tekshirilmoqda…</string>
+    <string name="movie_black">Kadr olinmadi yoki juda qorong‘i. Himoyalangan video bo‘lishi mumkin; DRM videoni tahlil qilib bo‘lmaydi. Yorug‘ sahnada qayta urinib ko‘ring.</string>
+    <string name="movie_error">So‘rov bajarilmadi. Internet, Gemini modeli/kaliti va TMDB tokenini tekshiring. Qayta urinishingiz mumkin.</string>
+    <string name="movie_unknown">Film aniqlanmadi. Boshqa sahnada qayta urinib ko‘ring.</string>
+    <string name="movie_choose">Taxminiy variantni tasdiqlang. TMDB mosligi kadrdagi filmni isbotlamaydi.</string>
+    <string name="movie_estimate">AI taxmini</string>
+    <string name="movie_answering">Javob tayyorlanmoqda…</string>
+    <string name="movie_ready">Savollarga tayyor. Kuzatilmagan sahnalar noma’lum.</string>
+    <string name="movie_close">Yopish</string>
+    <string name="movie_stop">Kuzatuvni to‘xtatish</string>
+    <string name="movie_new">Yangi film / qayta aniqlash</string>
+    <string name="movie_spoiler">Spoilersiz javob</string>
+    <string name="movie_question">Kino haqida savolingiz</string>
+    <string name="movie_send">Yuborish</string>
+    <string name="movie_start">Yoqish va ruxsat berish</string>
+    <string name="movie_consent">Ekranning 3 ta kadri Gemini xizmatiga yuboriladi. Film nomi TMDB orqali tekshiriladi. Har savolda yangi kadr yuboriladi. Maxfiy oynalarni yoping. Tasvirlar diskka yozilmaydi; matnli suhbat telefonda saqlanadi. Internet va API to‘lovi talab qilinishi mumkin. Bildirishnomadan darhol to‘xtatishingiz mumkin.</string>
+    <string name="movie_tmdb_title">TMDB API Read Access Token</string>
+    <string name="movie_tmdb_help">TMDB hisobingizdagi API sozlamalaridan Read Access Token kiriting (API key emas). Kalit qurilmada shifrlanadi.</string>
+    <string name="movie_no_scene">Joriy kadr olinmadi. Javob faqat suhbat va umumiy bilimga asoslanadi; himoyalangan videoni tahlil qilib bo‘lmaydi.</string>
+</resources>

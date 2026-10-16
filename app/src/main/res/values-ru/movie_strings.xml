@@ -1,0 +1,23 @@
+<resources>
+    <string name="movie_stopped">Наблюдение остановлено</string>
+    <string name="movie_preparing">Определение через 10 секунд — вернитесь к фильму</string>
+    <string name="movie_identifying">Получение кадров и проверка фильма…</string>
+    <string name="movie_black">Кадр недоступен или слишком тёмный. Возможно, видео защищено; DRM не поддерживается. Повторите на светлой сцене.</string>
+    <string name="movie_error">Запрос не выполнен. Проверьте сеть, модель/ключ Gemini и токен TMDB. Можно повторить.</string>
+    <string name="movie_unknown">Фильм не определён. Повторите на другой сцене.</string>
+    <string name="movie_choose">Подтвердите вариант. Совпадение в TMDB не доказывает идентификацию кадра.</string>
+    <string name="movie_estimate">Оценка ИИ</string>
+    <string name="movie_answering">Подготовка ответа…</string>
+    <string name="movie_ready">Готов к вопросам. Ненаблюдавшиеся сцены неизвестны.</string>
+    <string name="movie_close">Закрыть</string>
+    <string name="movie_stop">Остановить захват</string>
+    <string name="movie_new">Другой фильм / повторить</string>
+    <string name="movie_spoiler">Без спойлеров</string>
+    <string name="movie_question">Вопрос о фильме</string>
+    <string name="movie_send">Отправить</string>
+    <string name="movie_start">Включить и разрешить</string>
+    <string name="movie_consent">Три кадра экрана отправляются в Gemini, название проверяется через TMDB. При каждом вопросе отправляется новый кадр. Закройте личные окна. Изображения не сохраняются на диск; текст чата хранится на телефоне. Возможна плата за API и трафик. Остановить можно в уведомлении.</string>
+    <string name="movie_tmdb_title">TMDB API Read Access Token</string>
+    <string name="movie_tmdb_help">Введите Read Access Token из API-настроек TMDB (не API key). Токен шифруется на устройстве.</string>
+    <string name="movie_no_scene">Текущий кадр недоступен. Ответ основан только на переписке и общих знаниях; защищённое видео нельзя анализировать.</string>
+</resources>

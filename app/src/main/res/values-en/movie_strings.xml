@@ -1,0 +1,23 @@
+<resources>
+    <string name="movie_stopped">Capture stopped</string>
+    <string name="movie_preparing">Identification starts in 10 seconds — return to the movie</string>
+    <string name="movie_identifying">Capturing frames and checking movie…</string>
+    <string name="movie_black">Frame unavailable or too dark. Content may be protected; DRM video is unsupported. Retry on a brighter scene.</string>
+    <string name="movie_error">Request failed. Check network, Gemini model/key and TMDB token. You can retry.</string>
+    <string name="movie_unknown">Movie not identified. Retry on another scene.</string>
+    <string name="movie_choose">Confirm a candidate. A TMDB match does not prove the frame identity.</string>
+    <string name="movie_estimate">AI estimate</string>
+    <string name="movie_answering">Preparing answer…</string>
+    <string name="movie_ready">Ready for questions. Unobserved scenes are unknown.</string>
+    <string name="movie_close">Close</string>
+    <string name="movie_stop">Stop capture</string>
+    <string name="movie_new">New movie / retry</string>
+    <string name="movie_spoiler">Spoiler-free answers</string>
+    <string name="movie_question">Question about the movie</string>
+    <string name="movie_send">Send</string>
+    <string name="movie_start">Enable and consent</string>
+    <string name="movie_consent">Three screen frames are sent to Gemini; the title is checked with TMDB. Each question sends a fresh frame. Close private screens. Images are not saved to disk; chat text stays on this device. API/data charges may apply. Stop at any time from the notification.</string>
+    <string name="movie_tmdb_title">TMDB API Read Access Token</string>
+    <string name="movie_tmdb_help">Enter the Read Access Token from TMDB API settings (not the API key). It is encrypted on device.</string>
+    <string name="movie_no_scene">No current frame is available. This answer uses conversation and general knowledge only; protected video cannot be analyzed.</string>
+</resources>

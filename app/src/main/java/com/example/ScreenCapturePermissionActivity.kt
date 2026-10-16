@@ -18,7 +18,7 @@ class ScreenCapturePermissionActivity : ComponentActivity() {
             MediaProjectionHolder.resultCode = result.resultCode
             MediaProjectionHolder.resultData = result.data
             ContextCompat.startForegroundService(this, Intent(this, LassoOverlayService::class.java)
-                .setAction(LassoOverlayService.ACTION_OPEN_SELECTION))
+                .setAction(if (intent.getBooleanExtra("movie_mode", false)) LassoOverlayService.ACTION_START_MOVIE else LassoOverlayService.ACTION_OPEN_SELECTION))
         } else {
             Toast.makeText(this, R.string.error_no_projection, Toast.LENGTH_LONG).show()
         }
