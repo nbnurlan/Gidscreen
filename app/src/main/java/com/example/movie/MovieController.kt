@@ -128,7 +128,7 @@ class MovieController(
             session.turns += MovieTurn("user", question.take(4000)); persist()
             val answer = api.generate(listOfNotNull(scene), contextData.toString(), MoviePolicy.systemPrompt(session.spoilerFree, language))
             ensureActiveContext()
-            session.turns += MovieTurn("assistant", answer); persist()
+            session.turns += MovieTurn("assistant", if (scene == null) context.getString(R.string.movie_no_scene) + "\n\n" + answer else answer); persist()
             scene = null // Do not retain sensitive pixels beyond the request.
             status(R.string.movie_ready)
         }

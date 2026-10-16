@@ -19,4 +19,5 @@
     <string name="movie_consent">Три кадра экрана отправляются в Gemini, название проверяется через TMDB. При каждом вопросе отправляется новый кадр. Закройте личные окна. Изображения не сохраняются на диск; текст чата хранится на телефоне. Возможна плата за API и трафик. Остановить можно в уведомлении.</string>
     <string name="movie_tmdb_title">TMDB API Read Access Token</string>
     <string name="movie_tmdb_help">Введите Read Access Token из API-настроек TMDB (не API key). Токен шифруется на устройстве.</string>
+    <string name="movie_no_scene">Текущий кадр недоступен. Ответ основан только на переписке и общих знаниях; защищённое видео нельзя анализировать.</string>
 </resources>

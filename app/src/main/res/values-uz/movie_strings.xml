@@ -19,4 +19,5 @@
     <string name="movie_consent">Ekranning 3 ta kadri Gemini xizmatiga yuboriladi. Film nomi TMDB orqali tekshiriladi. Har savolda yangi kadr yuboriladi. Maxfiy oynalarni yoping. Tasvirlar diskka yozilmaydi; matnli suhbat telefonda saqlanadi. Internet va API to‘lovi talab qilinishi mumkin. Bildirishnomadan darhol to‘xtatishingiz mumkin.</string>
     <string name="movie_tmdb_title">TMDB API Read Access Token</string>
     <string name="movie_tmdb_help">TMDB hisobingizdagi API sozlamalaridan Read Access Token kiriting (API key emas). Kalit qurilmada shifrlanadi.</string>
+    <string name="movie_no_scene">Joriy kadr olinmadi. Javob faqat suhbat va umumiy bilimga asoslanadi; himoyalangan videoni tahlil qilib bo‘lmaydi.</string>
 </resources>

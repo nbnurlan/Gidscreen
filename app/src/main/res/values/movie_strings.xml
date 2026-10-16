@@ -19,4 +19,5 @@
     <string name="movie_consent">Three screen frames are sent to Gemini; the title is checked with TMDB. Each question sends a fresh frame. Close private screens. Images are not saved to disk; chat text stays on this device. API/data charges may apply. Stop at any time from the notification.</string>
     <string name="movie_tmdb_title">TMDB API Read Access Token</string>
     <string name="movie_tmdb_help">Enter the Read Access Token from TMDB API settings (not the API key). It is encrypted on device.</string>
+    <string name="movie_no_scene">No current frame is available. This answer uses conversation and general knowledge only; protected video cannot be analyzed.</string>
 </resources>
